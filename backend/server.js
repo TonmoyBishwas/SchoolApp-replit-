@@ -537,6 +537,16 @@ function insertAttendanceRecords(records) {
     });
 }
 
+// ===== API TEST ROUTE =====
+app.get('/api', (req, res) => {
+    res.json({ 
+        success: true, 
+        message: 'Cheick Mohamed School API is running',
+        environment: isReplit ? 'Replit' : 'Local',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // ===== STATIC FILE SERVING =====
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'index.html'));
@@ -603,7 +613,17 @@ startServer();
 console.log(`🌍 Environment: ${isReplit ? 'Replit' : 'Local'}`);
 console.log(`📁 Database Path: ${DB_PATH}`);
 if (isReplit) {
-    console.log(`🌐 Replit URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+    // Try to get the actual Replit URL from various environment variables
+    const replitUrl = process.env.REPL_URL || 
+                     process.env.REPLIT_URL || 
+                     `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` ||
+                     'https://replit-url-not-detected';
+    console.log(`🌐 Replit URL: ${replitUrl}`);
+    console.log(`🔍 Environment variables:`);
+    console.log(`   REPL_URL: ${process.env.REPL_URL || 'not set'}`);
+    console.log(`   REPLIT_URL: ${process.env.REPLIT_URL || 'not set'}`);
+    console.log(`   REPL_SLUG: ${process.env.REPL_SLUG || 'not set'}`);
+    console.log(`   REPL_OWNER: ${process.env.REPL_OWNER || 'not set'}`);
 }
 
 module.exports = app;
