@@ -1,0 +1,203 @@
+**For Administrators**
+* Full control over school operations
+* Manage classes, sections & groups dynamically
+* Student admission & attendance tracking
+* Exam management & result publishing
+* Library, transport & dormitory management
+* Complete accounting & fee transactions
+* Instant communication with teachers, students & parents
+
+**For Teachers**
+* Personalized dashboard for easy navigation
+* Access to class schedules & student details
+* Online attendance & exam mark submission
+* Internal messaging system for seamless communication
+* Library & transport information at your fingertips
+* Secure profile & event calendar
+
+**For Students**
+* View class schedules & subject details
+* Stay updated with school notices & exam routines
+* Access to exam results & mark sheets instantly
+* Library book search & borrowing info
+* Direct messaging with teachers & classmates
+
+**For Parents**
+* Keep track of your child's progress & attendance
+* View exam schedules & results in real-time
+* Direct communication with teachers & admin
+* Library & transport information access
+* Manage personal profile & security settings
+
+
+
+
+
+
+----suggestions for you-----
+Child's school name.           Role 
+
+
+Student: adding
+-students ID 
+
+-Branch 
+
+-grade 
+
+-Picture of students 
+
+-Date of birth 
+
+-Date of joining 
+
+- place of birth 
+
+-country 
+
+-city 
+
+-sex 
+
+-Name   
+
+-Phone number with country code 
+
+-E-mail 
+
+-School Fee 
+
+-Balance 
+
+-Possibility to send sms homework, informations 
+
+-Exam reminder 
+
+-school balance fee reminder 
+
+-punishment section (warning,restraint, passage to the Administrative Council,summons of parents, exclusion, long-term exclusion. )possibility to add other punishment. 
+
+-blood group 
+
+Parents: addind
+Joined to his children 
+-Name 
+
+-Phone number with country code 
+
+-E-mail 
+
+-relation with the students (mother, father, uncle, aunt or guardian). 
+
+-sex 
+
+-date of birth 
+
+-place of birth 
+
+-possibility to receive his children's punishment notification, there exams mark, late emtrance et early leave. 
+
+-school balance  fee reminder 
+
+-school fee paid by his children with amount and month 
+
+-Possibility to see directly  his children's observations, behaviors and punishment. 
+
+-Possibility to send messages to a teacher. 
+
+
+Homework 
+Subjects 
+Grade
+Level
+Date of correction 
+Possibility to joined file 
+Teacher 
+Reminder 
+
+
+Class
+Class level in number 
+Class name 
+Description 
+
+
+
+Teacher 
+Name 
+Sex
+Date of birth 
+Type of contract 
+Spécialisation 
+Phonr Number 
+E-mail 
+Original school 
+Grade 
+
+
+
+
+
+
+
+
+
+administrative circular
+Word 
+Update file 
+Who can see the circular. 
+
+Event
+Name 
+Category 
+Class
+Start date 
+End date
+Grade
+Number of place 
+Details 
+
+Exams
+Date of exam
+Level 
+Grade
+Number of exams (1,2,3...)
+Exams name 
+Teacher 
+Marks of the class for this exam 
+
+Class Subjects
+Name 
+Teacher 
+Level 
+Class 
+
+Internal message 
+Role 
+Destination 
+Objets 
+Message 
+Possibility to joined file 
+
+Times table
+
+
+
+
+Paiement 
+
+
+
+
+
+At the buttock 
+
+About.             
+Edunetgn is a digital platform dedicated to school management, serving as a central interface between school administration, teachers, parents and learners. This innovative solution supports all educational cycles, from kindergarten to higher education 
+
+   Contact.          
+I will give you details
+
+
+Follow us
+I will create Facebook page and YouTube page so you need to prepare place for link

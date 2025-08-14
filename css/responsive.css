@@ -1,0 +1,386 @@
+/* ===== RESPONSIVE DESIGN ENHANCEMENTS ===== */
+
+/* Extra Small Devices (phones, 600px and down) */
+@media only screen and (max-width: 600px) {
+    .container {
+        padding: 0 var(--space-sm);
+    }
+
+    .nav-container {
+        padding: 0 var(--space-sm);
+    }
+
+    .school-name {
+        font-size: 1rem !important;
+    }
+
+    .school-subtitle {
+        font-size: 0.75rem !important;
+    }
+
+    .hero {
+        padding: 100px 0 var(--space-xl);
+    }
+
+    .hero-title {
+        font-size: 2rem;
+        line-height: 1.2;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+
+    .hero-stats {
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .stat-number {
+        font-size: 2rem;
+    }
+
+    .hero-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .school-building {
+        width: 150px;
+        height: 150px;
+        font-size: 4rem;
+    }
+
+    .section-title {
+        font-size: 1.75rem;
+    }
+
+    .section-subtitle {
+        font-size: 1rem;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .portal-card {
+        padding: var(--space-lg);
+    }
+
+    .portal-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .modal-content {
+        margin: 10% var(--space-sm);
+        max-width: none;
+    }
+
+    .credentials-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Small Devices (portrait tablets and large phones, 600px and up) */
+@media only screen and (min-width: 600px) and (max-width: 768px) {
+    .hero-container {
+        grid-template-columns: 1fr;
+        gap: var(--space-xl);
+    }
+
+    .hero-title {
+        font-size: 2.25rem;
+    }
+
+    .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .portals-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .contact-content {
+        grid-template-columns: 1fr;
+        gap: var(--space-xl);
+    }
+}
+
+/* Medium Devices (landscape tablets, 768px and up) */
+@media only screen and (min-width: 768px) and (max-width: 992px) {
+    .hero-container {
+        grid-template-columns: 1fr;
+        gap: var(--space-xl);
+        text-align: center;
+    }
+
+    .hero-visual {
+        order: -1;
+    }
+
+    .portals-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .nav-menu {
+        gap: var(--space-md);
+    }
+}
+
+/* Large Devices (laptops/desktops, 992px and up) */
+@media only screen and (min-width: 992px) and (max-width: 1200px) {
+    .hero-title {
+        font-size: 3rem;
+    }
+
+    .portals-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Extra Large Devices (large laptops and desktops, 1200px and up) */
+@media only screen and (min-width: 1200px) {
+    .container {
+        max-width: 1400px;
+    }
+
+    .nav-container {
+        max-width: 1400px;
+    }
+
+    .hero-container {
+        max-width: 1400px;
+    }
+
+    .hero-title {
+        font-size: 4rem;
+    }
+
+    .portals-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .school-emblem,
+    .portal-icon,
+    .school-building {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Portrait Orientation */
+@media screen and (orientation: portrait) {
+    .hero-stats {
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-md);
+    }
+
+    .nav-menu.active {
+        height: calc(100vh - 80px);
+    }
+}
+
+/* Landscape Orientation */
+@media screen and (orientation: landscape) and (max-height: 600px) {
+    .hero {
+        padding: 120px 0 var(--space-lg);
+    }
+
+    .hero-title {
+        font-size: 2.5rem;
+    }
+
+    .nav-menu.active {
+        height: calc(100vh - 80px);
+        overflow-y: auto;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .navbar,
+    .hero-buttons,
+    .portal-btn,
+    .login-btn,
+    .social-links,
+    .hamburger {
+        display: none !important;
+    }
+
+    .hero {
+        padding: var(--space-lg) 0;
+    }
+
+    body {
+        font-size: 12pt;
+        color: #000;
+        background: #fff;
+    }
+
+    .section-title {
+        color: #000;
+        font-size: 18pt;
+    }
+
+    .portal-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .school-building {
+        animation: none;
+    }
+
+    html {
+        scroll-behavior: auto;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    :root {
+        --primary-red: #000;
+        --primary-yellow: #ffff00;
+        --primary-green: #008000;
+        --navy-blue: #000080;
+        --royal-blue: #0000ff;
+        --gray: #666;
+        --dark-gray: #000;
+        --charcoal: #000;
+    }
+
+    .portal-card {
+        border: 2px solid #000;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        border: 2px solid #000;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --white: #1a1a1a;
+        --light-gray: #2d2d2d;
+        --gray: #9ca3af;
+        --dark-gray: #f3f4f6;
+        --charcoal: #111827;
+    }
+
+    body {
+        background-color: var(--charcoal);
+        color: var(--dark-gray);
+    }
+
+    .navbar {
+        background: var(--charcoal);
+        border-bottom: 1px solid #374151;
+    }
+
+    .portal-card {
+        background: var(--light-gray);
+        border: 1px solid #374151;
+    }
+
+    .hero {
+        background: linear-gradient(135deg, var(--charcoal) 0%, var(--light-gray) 100%);
+    }
+
+    .about {
+        background: var(--charcoal);
+    }
+
+    .modal-content {
+        background-color: var(--light-gray);
+        border: 1px solid #374151;
+    }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .btn-primary,
+    .btn-secondary,
+    .portal-btn,
+    .login-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .nav-link {
+        padding: var(--space-sm) 0;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    .social-link {
+        min-width: 48px;
+        min-height: 48px;
+    }
+
+    .close {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Focus Management for Accessibility */
+@media (prefers-reduced-motion: no-preference) {
+    .nav-link:focus,
+    .btn-primary:focus,
+    .btn-secondary:focus,
+    .portal-btn:focus,
+    .login-btn:focus {
+        outline: 2px solid var(--royal-blue);
+        outline-offset: 2px;
+    }
+}
+
+/* Flexible Grid Adjustments */
+@media (max-width: 1024px) {
+    .features-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .hero-stats {
+        flex-wrap: wrap;
+        justify-content: space-around;
+    }
+
+    .stat-item {
+        flex: 1;
+        min-width: 80px;
+    }
+}

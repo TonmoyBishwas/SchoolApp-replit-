@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheick Mohamed School and College - Guinea</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Header -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <div class="school-emblem">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div class="school-info">
+                    <h2 class="school-name">Cheick Mohamed School</h2>
+                    <p class="school-subtitle">and College - Guinea</p>
+                </div>
+            </div>
+            <div class="nav-menu" id="nav-menu">
+                <a href="#home" class="nav-link">Home</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#portals" class="nav-link">Portals</a>
+                <a href="#contact" class="nav-link">Contact</a>
+                <button class="login-btn" onclick="openLoginModal()">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </div>
+            <div class="hamburger" id="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">Excellence in Education</h1>
+                <p class="hero-subtitle">Cheick Mohamed School and College - Leading educational institution in Guinea providing quality education from kindergarten to higher studies</p>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">500+</div>
+                        <div class="stat-label">Students</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">35+</div>
+                        <div class="stat-label">Teachers</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">15+</div>
+                        <div class="stat-label">Years</div>
+                    </div>
+                </div>
+                <div class="hero-buttons">
+                    <button class="btn-primary" onclick="scrollToPortals()">
+                        <i class="fas fa-rocket"></i> Access Portals
+                    </button>
+                    <button class="btn-secondary" onclick="scrollToAbout()">
+                        <i class="fas fa-info-circle"></i> Learn More
+                    </button>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="school-building">
+                    <i class="fas fa-university"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">About Our School</h2>
+                <p class="section-subtitle">Committed to academic excellence and character development</p>
+            </div>
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>Our Mission</h3>
+                    <p>Cheick Mohamed School and College is dedicated to providing high-quality education that prepares students for success in an ever-changing world. Located in Guinea, we serve as a cornerstone of educational excellence in West Africa.</p>
+                    
+                    <h3>Our Vision</h3>
+                    <p>To be the leading educational institution in Guinea, fostering innovation, critical thinking, and moral values that shape future leaders and global citizens.</p>
+
+                    <div class="features-grid">
+                        <div class="feature-item">
+                            <i class="fas fa-brain"></i>
+                            <h4>Academic Excellence</h4>
+                            <p>Comprehensive curriculum designed to challenge and inspire</p>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-users"></i>
+                            <h4>Character Building</h4>
+                            <p>Emphasis on moral values and ethical leadership</p>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-globe-africa"></i>
+                            <h4>Cultural Heritage</h4>
+                            <p>Celebrating Guinea's rich cultural diversity</p>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-laptop"></i>
+                            <h4>Modern Technology</h4>
+                            <p>State-of-the-art facilities and digital learning tools</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Portals Section -->
+    <section id="portals" class="portals">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">School Management Portals</h2>
+                <p class="section-subtitle">Access your dedicated portal for seamless school management</p>
+            </div>
+            <div class="portals-grid">
+                <!-- Admin Portal -->
+                <div class="portal-card admin-portal">
+                    <div class="portal-icon">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <h3>Admin Portal</h3>
+                    <p>Complete school operations management, student enrollment, staff management, and comprehensive reporting</p>
+                    <ul class="portal-features">
+                        <li><i class="fas fa-check"></i> Student Management</li>
+                        <li><i class="fas fa-check"></i> Staff Administration</li>
+                        <li><i class="fas fa-check"></i> Academic Reports</li>
+                        <li><i class="fas fa-check"></i> Financial Management</li>
+                    </ul>
+                    <button class="portal-btn" onclick="loginAs('admin')">
+                        <i class="fas fa-sign-in-alt"></i> Admin Login
+                    </button>
+                </div>
+
+                <!-- Teacher Portal -->
+                <div class="portal-card teacher-portal">
+                    <div class="portal-icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <h3>Teacher Portal</h3>
+                    <p>Manage classes, track attendance, submit grades, and communicate with students and parents</p>
+                    <ul class="portal-features">
+                        <li><i class="fas fa-check"></i> Class Management</li>
+                        <li><i class="fas fa-check"></i> Attendance Tracking</li>
+                        <li><i class="fas fa-check"></i> Grade Submission</li>
+                        <li><i class="fas fa-check"></i> Parent Communication</li>
+                    </ul>
+                    <button class="portal-btn" onclick="loginAs('teacher')">
+                        <i class="fas fa-sign-in-alt"></i> Teacher Login
+                    </button>
+                </div>
+
+                <!-- Student Portal -->
+                <div class="portal-card student-portal">
+                    <div class="portal-icon">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h3>Student Portal</h3>
+                    <p>View schedules, check grades, track attendance, and access learning resources</p>
+                    <ul class="portal-features">
+                        <li><i class="fas fa-check"></i> Academic Dashboard</li>
+                        <li><i class="fas fa-check"></i> Attendance History</li>
+                        <li><i class="fas fa-check"></i> Grade Reports</li>
+                        <li><i class="fas fa-check"></i> School Announcements</li>
+                    </ul>
+                    <button class="portal-btn" onclick="loginAs('student')">
+                        <i class="fas fa-sign-in-alt"></i> Student Login
+                    </button>
+                </div>
+
+                <!-- Parent Portal -->
+                <div class="portal-card parent-portal">
+                    <div class="portal-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Parent Portal</h3>
+                    <p>Monitor your child's progress, communicate with teachers, and stay updated on school activities</p>
+                    <ul class="portal-features">
+                        <li><i class="fas fa-check"></i> Child's Progress</li>
+                        <li><i class="fas fa-check"></i> Teacher Communication</li>
+                        <li><i class="fas fa-check"></i> Fee Management</li>
+                        <li><i class="fas fa-check"></i> School Events</li>
+                    </ul>
+                    <button class="portal-btn" onclick="loginAs('parent')">
+                        <i class="fas fa-sign-in-alt"></i> Parent Login
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Contact Us</h2>
+                <p class="section-subtitle">Get in touch with Cheick Mohamed School and College</p>
+            </div>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <h4>Address</h4>
+                            <p>Cheick Mohamed School and College<br>Guinea, West Africa</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <div>
+                            <h4>Phone</h4>
+                            <p>+224 XXX XXX XXX</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <h4>Email</h4>
+                            <p>info@cheickmohamedschool.edu.gn</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="social-links">
+                    <h4>Follow Us</h4>
+                    <div class="social-icons">
+                        <a href="#" class="social-link facebook">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="social-link youtube">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                        <a href="#" class="social-link instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <div class="school-emblem">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div>
+                            <h3>Cheick Mohamed School</h3>
+                            <p>Excellence in Education</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#about">About</a></li>
+                        <li><a href="#portals">Portals</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Portals</h4>
+                    <ul>
+                        <li><a href="#" onclick="loginAs('admin')">Admin Portal</a></li>
+                        <li><a href="#" onclick="loginAs('teacher')">Teacher Portal</a></li>
+                        <li><a href="#" onclick="loginAs('student')">Student Portal</a></li>
+                        <li><a href="#" onclick="loginAs('parent')">Parent Portal</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact Info</h4>
+                    <p><i class="fas fa-map-marker-alt"></i> Guinea, West Africa</p>
+                    <p><i class="fas fa-envelope"></i> info@cheickmohamedschool.edu.gn</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Cheick Mohamed School and College. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="loginTitle">Portal Login</h2>
+                <span class="close" onclick="closeLoginModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Username/ID:</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Login As:</label>
+                        <select id="role" name="role" required>
+                            <option value="">Select Role</option>
+                            <option value="admin">Administrator</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="student">Student</option>
+                            <option value="parent">Parent</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary full-width">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+                <div class="demo-credentials">
+                    <h4>Demo Credentials:</h4>
+                    <div class="credentials-grid">
+                        <div class="credential-item">
+                            <strong>Admin:</strong> admin123 / admin123
+                        </div>
+                        <div class="credential-item">
+                            <strong>Teacher:</strong> teacher001 / teacher123
+                        </div>
+                        <div class="credential-item">
+                            <strong>Student:</strong> student444 / student123
+                        </div>
+                        <div class="credential-item">
+                            <strong>Parent:</strong> parent001 / parent123
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

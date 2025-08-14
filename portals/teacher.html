@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Portal - Cheick Mohamed School</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/portals/portal.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="portal-body">
+    <!-- Portal Header -->
+    <header class="portal-header">
+        <div class="portal-nav">
+            <div class="portal-logo">
+                <div class="school-emblem">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div class="school-info">
+                    <h2>Cheick Mohamed School</h2>
+                    <p class="portal-type">Teacher Portal</p>
+                </div>
+            </div>
+            <div class="portal-user">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Teacher</span>
+                    <span class="user-role">Teacher</span>
+                </div>
+                <div class="user-avatar">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <div class="user-menu-toggle" onclick="toggleUserMenu()">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Portal Sidebar -->
+    <aside class="portal-sidebar">
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <h3>Main</h3>
+                <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <h3>Classes</h3>
+                <a href="#my-classes" class="nav-item" onclick="showSection('my-classes')">
+                    <i class="fas fa-school"></i>
+                    <span>My Classes</span>
+                </a>
+                <a href="#attendance" class="nav-item" onclick="showSection('attendance')">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Attendance</span>
+                </a>
+                <a href="#schedule" class="nav-item" onclick="showSection('schedule')">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>My Schedule</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>Academic</h3>
+                <a href="#grades" class="nav-item" onclick="showSection('grades')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Grades & Results</span>
+                </a>
+                <a href="#assignments" class="nav-item" onclick="showSection('assignments')">
+                    <i class="fas fa-tasks"></i>
+                    <span>Assignments</span>
+                </a>
+                <a href="#exams" class="nav-item" onclick="showSection('exams')">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Examinations</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>Communication</h3>
+                <a href="#messages" class="nav-item" onclick="showSection('messages')">
+                    <i class="fas fa-envelope"></i>
+                    <span>Messages</span>
+                </a>
+                <a href="#announcements" class="nav-item" onclick="showSection('announcements')">
+                    <i class="fas fa-bullhorn"></i>
+                    <span>Announcements</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>Resources</h3>
+                <a href="#library" class="nav-item" onclick="showSection('library')">
+                    <i class="fas fa-book"></i>
+                    <span>Library</span>
+                </a>
+                <a href="#profile" class="nav-item" onclick="showSection('profile')">
+                    <i class="fas fa-user"></i>
+                    <span>My Profile</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="portal-main">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="content-section active">
+            <div class="section-header">
+                <div>
+                    <h1>Teacher Dashboard</h1>
+                    <p>Welcome back, <span id="welcomeName">Teacher</span>!</p>
+                </div>
+            </div>
+
+            <!-- Teacher Info Card -->
+            <div class="teacher-info-card">
+                <div class="info-header">
+                    <div class="teacher-avatar">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="teacher-details">
+                        <h2 id="teacherName">John Doe</h2>
+                        <p><strong>Teacher ID:</strong> <span id="teacherId">TCH001</span></p>
+                        <p><strong>Department:</strong> <span id="teacherDept">Mathematics</span></p>
+                        <p><strong>Experience:</strong> <span id="teacherExp">8 years</span></p>
+                    </div>
+                    <div class="today-schedule">
+                        <div class="schedule-badge">
+                            <i class="fas fa-clock"></i>
+                            <span>5 Classes Today</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon classes">
+                        <i class="fas fa-school"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalClasses">6</h3>
+                        <p>My Classes</p>
+                        <span class="stat-change neutral">This semester</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon students">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalStudents">145</h3>
+                        <p>Total Students</p>
+                        <span class="stat-change positive">Active</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon attendance">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="attendanceRate">92%</h3>
+                        <p>Avg Attendance</p>
+                        <span class="stat-change positive">This month</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon assignments">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="pendingGrading">8</h3>
+                        <p>Pending Grading</p>
+                        <span class="stat-change warning">Assignments</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today's Schedule & Recent Activity -->
+            <div class="dashboard-widgets">
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3>Today's Schedule</h3>
+                        <span class="date-badge" id="todayDate">August 14, 2025</span>
+                    </div>
+                    <div class="widget-content">
+                        <div class="schedule-list">
+                            <div class="schedule-item">
+                                <div class="schedule-time">
+                                    <div class="time-start">9:00 AM</div>
+                                    <div class="time-end">10:00 AM</div>
+                                </div>
+                                <div class="schedule-details">
+                                    <h4>Mathematics - Class 10A</h4>
+                                    <p>Room 101 • 32 students</p>
+                                </div>
+                                <div class="schedule-status current">
+                                    <i class="fas fa-play-circle"></i>
+                                </div>
+                            </div>
+                            <div class="schedule-item">
+                                <div class="schedule-time">
+                                    <div class="time-start">10:30 AM</div>
+                                    <div class="time-end">11:30 AM</div>
+                                </div>
+                                <div class="schedule-details">
+                                    <h4>Algebra - Class 11B</h4>
+                                    <p>Room 105 • 28 students</p>
+                                </div>
+                                <div class="schedule-status upcoming">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                            </div>
+                            <div class="schedule-item">
+                                <div class="schedule-time">
+                                    <div class="time-start">2:00 PM</div>
+                                    <div class="time-end">3:00 PM</div>
+                                </div>
+                                <div class="schedule-details">
+                                    <h4>Calculus - Class 12A</h4>
+                                    <p>Room 103 • 25 students</p>
+                                </div>
+                                <div class="schedule-status upcoming">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3>Recent Activity</h3>
+                        <button class="widget-refresh" onclick="refreshActivity()">
+                            <i class="fas fa-refresh"></i>
+                        </button>
+                    </div>
+                    <div class="widget-content">
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>Attendance submitted:</strong> Class 10A Mathematics</p>
+                                    <span class="activity-time">30 minutes ago</span>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>Grades entered:</strong> Algebra Quiz - Class 11B</p>
+                                    <span class="activity-time">2 hours ago</span>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>Assignment created:</strong> Trigonometry Problems</p>
+                                    <span class="activity-time">Yesterday</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h2>Quick Actions</h2>
+                <div class="action-grid">
+                    <button class="action-btn" onclick="showSection('attendance')">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Take Attendance</span>
+                    </button>
+                    <button class="action-btn" onclick="showSection('grades')">
+                        <i class="fas fa-plus"></i>
+                        <span>Enter Grades</span>
+                    </button>
+                    <button class="action-btn" onclick="showSection('assignments')">
+                        <i class="fas fa-tasks"></i>
+                        <span>Create Assignment</span>
+                    </button>
+                    <button class="action-btn" onclick="showSection('messages')">
+                        <i class="fas fa-envelope"></i>
+                        <span>Send Message</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- My Classes Section -->
+        <section id="my-classes" class="content-section">
+            <div class="section-header">
+                <h1>My Classes</h1>
+                <div class="header-actions">
+                    <button class="btn-secondary">
+                        <i class="fas fa-download"></i> Export Class List
+                    </button>
+                </div>
+            </div>
+
+            <div class="classes-grid">
+                <div class="class-card">
+                    <div class="class-header">
+                        <div class="class-info">
+                            <h3>Mathematics</h3>
+                            <p>Class 10A</p>
+                        </div>
+                        <div class="class-stats">
+                            <span class="student-count">32 Students</span>
+                        </div>
+                    </div>
+                    <div class="class-details">
+                        <div class="detail-item">
+                            <i class="fas fa-clock"></i>
+                            <span>9:00 AM - 10:00 AM</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Room 101</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>Mon, Wed, Fri</span>
+                        </div>
+                    </div>
+                    <div class="class-actions">
+                        <button class="btn-sm" onclick="viewClassDetails('10A')">View Details</button>
+                        <button class="btn-sm secondary" onclick="takeAttendance('10A')">Take Attendance</button>
+                    </div>
+                </div>
+
+                <div class="class-card">
+                    <div class="class-header">
+                        <div class="class-info">
+                            <h3>Algebra</h3>
+                            <p>Class 11B</p>
+                        </div>
+                        <div class="class-stats">
+                            <span class="student-count">28 Students</span>
+                        </div>
+                    </div>
+                    <div class="class-details">
+                        <div class="detail-item">
+                            <i class="fas fa-clock"></i>
+                            <span>10:30 AM - 11:30 AM</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Room 105</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>Tue, Thu</span>
+                        </div>
+                    </div>
+                    <div class="class-actions">
+                        <button class="btn-sm" onclick="viewClassDetails('11B')">View Details</button>
+                        <button class="btn-sm secondary" onclick="takeAttendance('11B')">Take Attendance</button>
+                    </div>
+                </div>
+
+                <div class="class-card">
+                    <div class="class-header">
+                        <div class="class-info">
+                            <h3>Calculus</h3>
+                            <p>Class 12A</p>
+                        </div>
+                        <div class="class-stats">
+                            <span class="student-count">25 Students</span>
+                        </div>
+                    </div>
+                    <div class="class-details">
+                        <div class="detail-item">
+                            <i class="fas fa-clock"></i>
+                            <span>2:00 PM - 3:00 PM</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Room 103</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>Mon, Wed, Fri</span>
+                        </div>
+                    </div>
+                    <div class="class-actions">
+                        <button class="btn-sm" onclick="viewClassDetails('12A')">View Details</button>
+                        <button class="btn-sm secondary" onclick="takeAttendance('12A')">Take Attendance</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Attendance Section -->
+        <section id="attendance" class="content-section">
+            <div class="section-header">
+                <h1>Class Attendance</h1>
+                <div class="header-actions">
+                    <select class="class-selector" id="attendanceClassSelector">
+                        <option value="10A">Class 10A - Mathematics</option>
+                        <option value="11B">Class 11B - Algebra</option>
+                        <option value="12A">Class 12A - Calculus</option>
+                    </select>
+                    <button class="btn-primary" onclick="submitAttendance()">
+                        <i class="fas fa-save"></i> Submit Attendance
+                    </button>
+                </div>
+            </div>
+
+            <div class="attendance-overview">
+                <div class="attendance-summary">
+                    <div class="summary-stat">
+                        <h3>Today's Attendance</h3>
+                        <div class="stat-value">29/32</div>
+                        <div class="stat-percentage">90.6%</div>
+                    </div>
+                    <div class="summary-stat">
+                        <h3>Present</h3>
+                        <div class="stat-value present">29</div>
+                    </div>
+                    <div class="summary-stat">
+                        <h3>Absent</h3>
+                        <div class="stat-value absent">3</div>
+                    </div>
+                    <div class="summary-stat">
+                        <h3>Late</h3>
+                        <div class="stat-value late">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="attendance-table-container">
+                <table class="data-table" id="attendanceTable">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>ID</th>
+                            <th>Status</th>
+                            <th>Time</th>
+                            <th>Method</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceTableBody">
+                        <tr>
+                            <td>Tonmoy Ahmed</td>
+                            <td>444</td>
+                            <td><span class="status present">Present</span></td>
+                            <td>10:07:56</td>
+                            <td><span class="method-badge face-recognition">Face Recognition</span></td>
+                            <td>
+                                <button class="btn-icon" onclick="editAttendance('444')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- More attendance records would be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Other sections placeholders -->
+        <section id="grades" class="content-section">
+            <div class="section-header">
+                <h1>Grades & Results</h1>
+                <button class="btn-primary">
+                    <i class="fas fa-plus"></i> Enter Grades
+                </button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-chart-line"></i>
+                <h3>Grades Management</h3>
+                <p>Enter and manage student grades and examination results</p>
+            </div>
+        </section>
+
+        <section id="assignments" class="content-section">
+            <div class="section-header">
+                <h1>Assignments</h1>
+                <button class="btn-primary">
+                    <i class="fas fa-plus"></i> Create Assignment
+                </button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-tasks"></i>
+                <h3>Assignment Management</h3>
+                <p>Create, manage, and grade student assignments</p>
+            </div>
+        </section>
+
+        <section id="schedule" class="content-section">
+            <div class="section-header">
+                <h1>My Teaching Schedule</h1>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-calendar-alt"></i>
+                <h3>Teaching Schedule</h3>
+                <p>View your complete teaching schedule and timetable</p>
+            </div>
+        </section>
+
+        <section id="exams" class="content-section">
+            <div class="section-header">
+                <h1>Examinations</h1>
+                <button class="btn-primary">
+                    <i class="fas fa-plus"></i> Schedule Exam
+                </button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-clipboard-list"></i>
+                <h3>Examination Management</h3>
+                <p>Schedule exams and manage examination results</p>
+            </div>
+        </section>
+
+        <section id="messages" class="content-section">
+            <div class="section-header">
+                <h1>Messages</h1>
+                <button class="btn-primary">
+                    <i class="fas fa-plus"></i> New Message
+                </button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-envelope"></i>
+                <h3>Messages</h3>
+                <p>Communicate with students, parents, and administration</p>
+            </div>
+        </section>
+
+        <section id="announcements" class="content-section">
+            <div class="section-header">
+                <h1>Announcements</h1>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-bullhorn"></i>
+                <h3>School Announcements</h3>
+                <p>View important school announcements and notices</p>
+            </div>
+        </section>
+
+        <section id="library" class="content-section">
+            <div class="section-header">
+                <h1>Library Resources</h1>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-book"></i>
+                <h3>Digital Library</h3>
+                <p>Access teaching resources and digital library materials</p>
+            </div>
+        </section>
+
+        <section id="profile" class="content-section">
+            <div class="section-header">
+                <h1>My Profile</h1>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-user"></i>
+                <h3>Teacher Profile</h3>
+                <p>View and update your professional information</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- User Menu Dropdown -->
+    <div id="userMenuDropdown" class="user-dropdown">
+        <div class="dropdown-content">
+            <a href="#" onclick="showSection('profile')">
+                <i class="fas fa-user"></i> My Profile
+            </a>
+            <a href="#" onclick="showSection('schedule')">
+                <i class="fas fa-calendar"></i> My Schedule
+            </a>
+            <hr>
+            <a href="#" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/portals/teacher.js"></script>
+</body>
+</html>

@@ -1,0 +1,670 @@
+// ===== ADMIN PORTAL JAVASCRIPT =====
+
+// ===== GLOBAL VARIABLES =====
+let attendanceData = [];
+let isLiveAttendanceActive = false;
+let attendanceUpdateInterval;
+
+// ===== INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        initializeAdminPortal();
+        checkAuthentication();
+        
+        // Load attendance data immediately
+        setTimeout(() => {
+            console.log('🚀 Starting attendance data load...');
+            loadAttendanceData().catch(error => {
+                console.error('Error loading attendance data:', error);
+                // Use demo data as fallback
+                const rawData = window.attendanceAPI.getDemoData();
+                attendanceData = window.attendanceAPI.formatAttendanceData(rawData);
+                updateAttendanceTable();
+                updateLiveAttendanceFeed(attendanceData.slice(0, 5));
+            });
+        }, 100);
+        
+        startLiveAttendanceFeed();
+    } catch (error) {
+        console.error('Error initializing admin portal:', error);
+    }
+});
+
+// ===== PORTAL INITIALIZATION =====
+function initializeAdminPortal() {
+    // Set user information
+    const currentUser = getCurrentUser();
+    if (currentUser) {
+        document.getElementById('userName').textContent = currentUser.name || 'Administrator';
+    }
+    
+    // Initialize dashboard
+    updateDashboardStats();
+    loadRecentActivity();
+    
+    // Setup event listeners
+    setupEventListeners();
+}
+
+function checkAuthentication() {
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.role !== 'admin') {
+        window.location.href = '../index.html';
+        return;
+    }
+}
+
+function getCurrentUser() {
+    const userData = localStorage.getItem('currentUser');
+    return userData ? JSON.parse(userData) : null;
+}
+
+// ===== EVENT LISTENERS =====
+function setupEventListeners() {
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('userMenuDropdown');
+        const userMenu = document.querySelector('.portal-user');
+        
+        if (dropdown && !userMenu.contains(e.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+    
+    // Handle window resize for responsive sidebar
+    window.addEventListener('resize', handleResize);
+}
+
+function handleResize() {
+    const sidebar = document.querySelector('.portal-sidebar');
+    if (window.innerWidth > 768) {
+        sidebar.classList.remove('active');
+    }
+}
+
+// ===== NAVIGATION FUNCTIONS =====
+function showSection(sectionId) {
+    // Hide all sections
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Remove active state from all nav items
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Show selected section
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+    }
+    
+    // Add active state to corresponding nav item
+    const activeNavItem = document.querySelector(`[onclick="showSection('${sectionId}')"]`);
+    if (activeNavItem) {
+        activeNavItem.classList.add('active');
+    }
+    
+    // Load section-specific data
+    loadSectionData(sectionId);
+    
+    // Close mobile sidebar if open
+    if (window.innerWidth <= 768) {
+        const sidebar = document.querySelector('.portal-sidebar');
+        sidebar.classList.remove('active');
+    }
+}
+
+function loadSectionData(sectionId) {
+    switch(sectionId) {
+        case 'attendance':
+            refreshAttendanceData();
+            break;
+        case 'students':
+            loadStudentData();
+            break;
+        case 'teachers':
+            loadTeacherData();
+            break;
+        case 'dashboard':
+            updateDashboardStats();
+            loadRecentActivity();
+            break;
+    }
+}
+
+// ===== USER MENU FUNCTIONS =====
+function toggleUserMenu() {
+    const dropdown = document.getElementById('userMenuDropdown');
+    const toggle = document.querySelector('.user-menu-toggle');
+    
+    dropdown.classList.toggle('active');
+    toggle.classList.toggle('active');
+}
+
+function showProfile() {
+    // Placeholder for profile functionality
+    showNotification('Profile feature coming soon!', 'info');
+}
+
+function logout() {
+    localStorage.removeItem('currentUser');
+    showNotification('Logged out successfully', 'success');
+    setTimeout(() => {
+        window.location.href = '../index.html';
+    }, 1000);
+}
+
+// ===== DASHBOARD FUNCTIONS =====
+function updateDashboardStats() {
+    // Simulate real-time stats updates
+    const stats = {
+        totalStudents: 523,
+        totalTeachers: 35,
+        totalClasses: 24,
+        attendanceRate: 94
+    };
+    
+    // Update stat cards with animation
+    animateStatCard('totalStudents', stats.totalStudents);
+    animateStatCard('totalTeachers', stats.totalTeachers);
+    animateStatCard('totalClasses', stats.totalClasses);
+    animateStatCard('attendanceRate', stats.attendanceRate + '%');
+}
+
+function animateStatCard(elementId, finalValue) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const isPercentage = String(finalValue).includes('%');
+    const numericValue = isPercentage ? parseInt(finalValue) : finalValue;
+    
+    let currentValue = 0;
+    const increment = numericValue / 50;
+    const timer = setInterval(() => {
+        currentValue += increment;
+        if (currentValue >= numericValue) {
+            element.textContent = finalValue;
+            clearInterval(timer);
+        } else {
+            element.textContent = isPercentage ? 
+                Math.floor(currentValue) + '%' : 
+                Math.floor(currentValue);
+        }
+    }, 30);
+}
+
+function loadRecentActivity() {
+    const activities = [
+        {
+            icon: 'fa-user-plus',
+            description: '<strong>New student enrolled:</strong> Sarah Johnson',
+            time: '2 hours ago'
+        },
+        {
+            icon: 'fa-calendar-check',
+            description: '<strong>Attendance submitted:</strong> Class 10A',
+            time: '3 hours ago'
+        },
+        {
+            icon: 'fa-money-bill',
+            description: '<strong>Fee payment received:</strong> $500',
+            time: '5 hours ago'
+        },
+        {
+            icon: 'fa-graduation-cap',
+            description: '<strong>Exam scheduled:</strong> Mathematics Test',
+            time: '6 hours ago'
+        }
+    ];
+    
+    const activityList = document.getElementById('activityList');
+    if (activityList) {
+        activityList.innerHTML = activities.map(activity => `
+            <div class="activity-item">
+                <div class="activity-icon">
+                    <i class="fas ${activity.icon}"></i>
+                </div>
+                <div class="activity-content">
+                    <p>${activity.description}</p>
+                    <span class="activity-time">${activity.time}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+function refreshActivity() {
+    const refreshBtn = document.querySelector('.widget-refresh');
+    if (refreshBtn) {
+        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        setTimeout(() => {
+            loadRecentActivity();
+            refreshBtn.innerHTML = '<i class="fas fa-refresh"></i>';
+            showNotification('Activity feed refreshed', 'success');
+        }, 1000);
+    }
+}
+
+// ===== ATTENDANCE FUNCTIONS =====
+async function loadAttendanceData() {
+    try {
+        console.log('🔄 Starting to load attendance data...');
+        
+        // Check if API is available
+        const isAPIAvailable = await isRealAttendanceAvailable();
+        
+        if (isAPIAvailable) {
+            console.log('📊 Loading real attendance data from API...');
+            const rawData = await window.attendanceAPI.fetchAttendanceData(100);
+            
+            if (rawData && rawData.length > 0) {
+                attendanceData = window.attendanceAPI.formatAttendanceData(rawData);
+                
+                // Clear placeholder data and show real data
+                clearPlaceholderData();
+                
+                // Initialize live feed with recent records
+                const recentRecords = attendanceData.slice(0, 5);
+                updateLiveAttendanceFeed(recentRecords);
+                
+                console.log(`✅ Loaded ${attendanceData.length} attendance records`);
+            } else {
+                console.log('⚠️ No attendance data found, using demo data');
+                const rawData = window.attendanceAPI.getDemoData();
+                attendanceData = window.attendanceAPI.formatAttendanceData(rawData);
+            }
+        } else {
+            console.log('📊 API not available, loading demo attendance data...');
+            const rawData = window.attendanceAPI.getDemoData();
+            attendanceData = window.attendanceAPI.formatAttendanceData(rawData);
+        }
+        
+        updateAttendanceTable();
+        updateAttendanceStats();
+        
+        // Start real-time updates if not already running
+        if (window.attendanceUpdater && !window.attendanceUpdater.isRunning) {
+            window.attendanceUpdater.start();
+        }
+        
+        console.log('✅ Attendance data loading completed');
+        
+    } catch (error) {
+        console.error('❌ Error loading attendance data:', error);
+        
+        // Fallback to demo data
+        try {
+            const rawData = window.attendanceAPI.getDemoData();
+            attendanceData = window.attendanceAPI.formatAttendanceData(rawData);
+            updateAttendanceTable();
+            console.log('✅ Fallback to demo data successful');
+        } catch (fallbackError) {
+            console.error('❌ Even demo data failed:', fallbackError);
+        }
+        
+        if (typeof showNotification === 'function') {
+            showNotification('Using demo attendance data', 'warning');
+        }
+    }
+}
+
+function updateAttendanceTable() {
+    const tableBody = document.getElementById('attendanceTableBody');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = attendanceData.map(record => `
+        <tr>
+            <td>${record.date}</td>
+            <td>${record.time}</td>
+            <td>${record.name}</td>
+            <td>${record.id}</td>
+            <td>${record.dept}</td>
+            <td><span class="status active">${record.status || 'Present'}</span></td>
+        </tr>
+    `).join('');
+}
+
+async function updateAttendanceStats() {
+    try {
+        const stats = await window.attendanceAPI.fetchAttendanceStats();
+        
+        // Update attendance overview stats
+        const attendanceOverview = document.querySelector('.attendance-overview .attendance-stats');
+        if (attendanceOverview) {
+            attendanceOverview.innerHTML = `
+                <div class="attendance-stat">
+                    <h3>Today's Attendance</h3>
+                    <div class="stat-value">${stats.todayAttendance}/${stats.totalStudents}</div>
+                    <div class="stat-percentage">${stats.todayAttendanceRate}%</div>
+                </div>
+                <div class="attendance-stat">
+                    <h3>This Week</h3>
+                    <div class="stat-value">${stats.weekAttendance}/2,615</div>
+                    <div class="stat-percentage">88.5%</div>
+                </div>
+                <div class="attendance-stat">
+                    <h3>This Month</h3>
+                    <div class="stat-value">${stats.monthAttendance}/11,437</div>
+                    <div class="stat-percentage">86.4%</div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error updating attendance stats:', error);
+    }
+}
+
+async function refreshAttendanceData() {
+    const refreshBtn = document.querySelector('[onclick="refreshAttendanceData()"]');
+    if (refreshBtn) {
+        const originalText = refreshBtn.innerHTML;
+        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+        
+        try {
+            // Force refresh attendance data from API
+            await loadAttendanceData();
+            refreshBtn.innerHTML = originalText;
+            showNotification('Attendance data refreshed', 'success');
+        } catch (error) {
+            refreshBtn.innerHTML = originalText;
+            showNotification('Error refreshing attendance data', 'error');
+            console.error('Error refreshing attendance:', error);
+        }
+    }
+}
+
+function exportAttendance() {
+    // Create CSV content
+    const headers = ['Date', 'Time', 'Student Name', 'ID', 'Department', 'Status'];
+    const csvContent = [
+        headers.join(','),
+        ...attendanceData.map(record => 
+            `${record.date},${record.time},${record.name},${record.id},${record.dept},Present`
+        )
+    ].join('\n');
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `attendance_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showNotification('Attendance data exported successfully', 'success');
+}
+
+// ===== LIVE ATTENDANCE FEED =====
+function startLiveAttendanceFeed() {
+    isLiveAttendanceActive = true;
+    
+    // Start polling for new attendance data every 5 seconds
+    attendanceUpdateInterval = setInterval(() => {
+        if (isLiveAttendanceActive) {
+            checkForNewAttendance();
+        }
+    }, 5000);
+}
+
+function stopLiveAttendanceFeed() {
+    isLiveAttendanceActive = false;
+    if (attendanceUpdateInterval) {
+        clearInterval(attendanceUpdateInterval);
+    }
+}
+
+async function checkForNewAttendance() {
+    try {
+        // Fetch fresh attendance data from API
+        const isAPIAvailable = await isRealAttendanceAvailable();
+        
+        if (isAPIAvailable) {
+            const freshData = await window.attendanceAPI.fetchAttendanceData(10); // Get last 10 records
+            const formattedData = window.attendanceAPI.formatAttendanceData(freshData);
+            
+            // Check if we have new records compared to current data
+            const newRecords = formattedData.filter(record => {
+                return !attendanceData.some(existing => 
+                    existing.date === record.date && 
+                    existing.time === record.time && 
+                    existing.id === record.id
+                );
+            });
+            
+            if (newRecords.length > 0) {
+                console.log(`Found ${newRecords.length} new attendance records`);
+                
+                // Add new records to the beginning of our data
+                attendanceData = [...newRecords, ...attendanceData].slice(0, 100);
+                
+                // Update the attendance table
+                updateAttendanceTable();
+                
+                // Update the live feed with new records
+                updateLiveAttendanceFeed(newRecords);
+                
+                // Update dashboard stats
+                updateAttendanceStats();
+            }
+        }
+    } catch (error) {
+        console.error('Error checking for new attendance:', error);
+    }
+}
+
+
+function clearPlaceholderData() {
+    const attendanceFeed = document.getElementById('attendanceFeed');
+    if (attendanceFeed) {
+        // Remove all existing items including placeholders
+        attendanceFeed.innerHTML = '';
+    }
+}
+
+function updateLiveAttendanceFeed(newRecords) {
+    const attendanceFeed = document.getElementById('attendanceFeed');
+    if (!attendanceFeed) return;
+    
+    // Remove placeholder if it exists
+    const placeholder = attendanceFeed.querySelector('.feed-placeholder');
+    if (placeholder) {
+        placeholder.remove();
+    }
+    
+    // Add new records to the feed
+    newRecords.forEach((record, index) => {
+        const feedItem = document.createElement('div');
+        feedItem.className = 'feed-item';
+        
+        // Calculate time difference for "time ago" display
+        const timeDisplay = getTimeDisplay(record.date, record.time);
+        
+        feedItem.innerHTML = `
+            <div class="student-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="feed-content">
+                <p><strong>${record.name}</strong> (ID: ${record.id})</p>
+                <span class="feed-time">${timeDisplay}</span>
+                <span class="feed-status present">Present</span>
+            </div>
+        `;
+        
+        // Add with animation for new records only (first few)
+        if (index < 3) {
+            feedItem.style.opacity = '0';
+            feedItem.style.transform = 'translateY(-20px)';
+            attendanceFeed.insertBefore(feedItem, attendanceFeed.firstChild);
+            
+            // Animate in
+            setTimeout(() => {
+                feedItem.style.transition = 'all 0.3s ease-out';
+                feedItem.style.opacity = '1';
+                feedItem.style.transform = 'translateY(0)';
+            }, 100 * index);
+        } else {
+            attendanceFeed.appendChild(feedItem);
+        }
+    });
+    
+    // Keep only last 5 items in feed
+    const feedItems = attendanceFeed.querySelectorAll('.feed-item');
+    if (feedItems.length > 5) {
+        for (let i = 5; i < feedItems.length; i++) {
+            feedItems[i].remove();
+        }
+    }
+}
+
+function getTimeDisplay(date, time) {
+    try {
+        const recordDateTime = new Date(`${date}T${time}`);
+        const now = new Date();
+        const diffMinutes = Math.floor((now - recordDateTime) / (1000 * 60));
+        
+        if (diffMinutes < 1) return 'Just now';
+        if (diffMinutes < 60) return `${diffMinutes} min ago`;
+        if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)} hr ago`;
+        return 'Earlier today';
+    } catch (error) {
+        return 'Recently';
+    }
+}
+
+// ===== STUDENT MANAGEMENT =====
+function loadStudentData() {
+    // Placeholder for student data loading
+    console.log('Loading student data...');
+}
+
+function showAddStudentModal() {
+    showNotification('Add Student feature coming soon!', 'info');
+}
+
+// ===== TEACHER MANAGEMENT =====
+function loadTeacherData() {
+    // Placeholder for teacher data loading
+    console.log('Loading teacher data...');
+}
+
+// ===== NOTIFICATION SYSTEM =====
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${getIconForType(type)}"></i>
+            <span>${message}</span>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    // Style the notification
+    notification.style.cssText = `
+        position: fixed;
+        top: 90px;
+        right: 20px;
+        z-index: 2000;
+        background: ${getColorForType(type)};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        max-width: 400px;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.animation = 'slideOutRight 0.3s ease-in';
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 5000);
+}
+
+function getIconForType(type) {
+    const icons = {
+        success: 'check-circle',
+        error: 'exclamation-circle',
+        warning: 'exclamation-triangle',
+        info: 'info-circle'
+    };
+    return icons[type] || 'info-circle';
+}
+
+function getColorForType(type) {
+    const colors = {
+        success: '#10b981',
+        error: '#ef4444',
+        warning: '#f59e0b',
+        info: '#3b82f6'
+    };
+    return colors[type] || '#3b82f6';
+}
+
+// ===== MOBILE SIDEBAR TOGGLE =====
+function toggleMobileSidebar() {
+    const sidebar = document.querySelector('.portal-sidebar');
+    sidebar.classList.toggle('active');
+}
+
+// ===== CLEANUP =====
+window.addEventListener('beforeunload', function() {
+    stopLiveAttendanceFeed();
+});
+
+// ===== CSS ANIMATIONS =====
+const animationStyles = document.createElement('style');
+animationStyles.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    .notification-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .notification-close {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 0;
+        margin-left: auto;
+    }
+`;
+document.head.appendChild(animationStyles);

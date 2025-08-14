@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+*.log
+
+# Database
+database/school.db
+database/school.db-journal
+
+# Environment variables
+.env
+.env.local
+
+# Face recognition files (exclude these from GitHub)
+auto_attend_app/
+known_faces/
+unknown_faces/
+captures/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Sync service cache
+backend/processed_records.json
+backend/attendance_sync.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Replit files
+.replit_zip_error_log

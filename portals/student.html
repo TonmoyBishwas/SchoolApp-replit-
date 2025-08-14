@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - Cheick Mohamed School</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/portals/portal.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="portal-body">
+    <!-- Portal Header -->
+    <header class="portal-header">
+        <div class="portal-nav">
+            <div class="portal-logo">
+                <div class="school-emblem">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div class="school-info">
+                    <h2>Cheick Mohamed School</h2>
+                    <p class="portal-type">Student Portal</p>
+                </div>
+            </div>
+            <div class="portal-user">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Student</span>
+                    <span class="user-role">Student</span>
+                </div>
+                <div class="user-avatar">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div class="user-menu-toggle" onclick="toggleUserMenu()">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Portal Sidebar -->
+    <aside class="portal-sidebar">
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <h3>Main</h3>
+                <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <h3>Academic</h3>
+                <a href="#attendance" class="nav-item" onclick="showSection('attendance')">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>My Attendance</span>
+                </a>
+                <a href="#grades" class="nav-item" onclick="showSection('grades')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Grades & Results</span>
+                </a>
+                <a href="#schedule" class="nav-item" onclick="showSection('schedule')">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Class Schedule</span>
+                </a>
+                <a href="#assignments" class="nav-item" onclick="showSection('assignments')">
+                    <i class="fas fa-tasks"></i>
+                    <span>Assignments</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>Communication</h3>
+                <a href="#messages" class="nav-item" onclick="showSection('messages')">
+                    <i class="fas fa-envelope"></i>
+                    <span>Messages</span>
+                </a>
+                <a href="#announcements" class="nav-item" onclick="showSection('announcements')">
+                    <i class="fas fa-bullhorn"></i>
+                    <span>Announcements</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>Resources</h3>
+                <a href="#library" class="nav-item" onclick="showSection('library')">
+                    <i class="fas fa-book"></i>
+                    <span>Library</span>
+                </a>
+                <a href="#profile" class="nav-item" onclick="showSection('profile')">
+                    <i class="fas fa-user"></i>
+                    <span>My Profile</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="portal-main">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="content-section active">
+            <div class="section-header">
+                <div>
+                    <h1>Student Dashboard</h1>
+                    <p>Welcome back, <span id="welcomeName">Student</span>!</p>
+                </div>
+            </div>
+
+            <!-- Student Info Card -->
+            <div class="student-info-card">
+                <div class="info-header">
+                    <div class="student-avatar">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div class="student-details">
+                        <h2 id="studentName">Tonmoy Ahmed</h2>
+                        <p><strong>Student ID:</strong> <span id="studentId">444</span></p>
+                        <p><strong>Department:</strong> <span id="studentDept">Computer Science & Engineering</span></p>
+                        <p><strong>Class:</strong> <span id="studentClass">CSE-2024</span></p>
+                    </div>
+                    <div class="attendance-status">
+                        <div class="status-badge present">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Present Today</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon attendance">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="attendancePercentage">94%</h3>
+                        <p>Attendance Rate</p>
+                        <span class="stat-change positive">+2% this month</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon grades">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="averageGrade">B+</h3>
+                        <p>Average Grade</p>
+                        <span class="stat-change positive">Improved</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon assignments">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="pendingAssignments">3</h3>
+                        <p>Pending Assignments</p>
+                        <span class="stat-change warning">Due soon</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon messages">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="unreadMessages">2</h3>
+                        <p>Unread Messages</p>
+                        <span class="stat-change neutral">New</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity & Upcoming Events -->
+            <div class="dashboard-widgets">
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3>Recent Activity</h3>
+                    </div>
+                    <div class="widget-content">
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>Attendance recorded:</strong> Present in Mathematics</p>
+                                    <span class="activity-time">2 hours ago</span>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="fas fa-upload"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>Assignment submitted:</strong> Physics Lab Report</p>
+                                    <span class="activity-time">1 day ago</span>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>Grade received:</strong> A- in Chemistry Quiz</p>
+                                    <span class="activity-time">2 days ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3>Upcoming Events</h3>
+                    </div>
+                    <div class="widget-content">
+                        <div class="events-list">
+                            <div class="event-item">
+                                <div class="event-date">
+                                    <div class="date-day">15</div>
+                                    <div class="date-month">Aug</div>
+                                </div>
+                                <div class="event-details">
+                                    <h4>Mathematics Exam</h4>
+                                    <p>Final examination - Room 201</p>
+                                    <span class="event-time">9:00 AM - 12:00 PM</span>
+                                </div>
+                            </div>
+                            <div class="event-item">
+                                <div class="event-date">
+                                    <div class="date-day">18</div>
+                                    <div class="date-month">Aug</div>
+                                </div>
+                                <div class="event-details">
+                                    <h4>Science Fair</h4>
+                                    <p>Annual science exhibition</p>
+                                    <span class="event-time">10:00 AM - 4:00 PM</span>
+                                </div>
+                            </div>
+                            <div class="event-item">
+                                <div class="event-date">
+                                    <div class="date-day">20</div>
+                                    <div class="date-month">Aug</div>
+                                </div>
+                                <div class="event-details">
+                                    <h4>Assignment Due</h4>
+                                    <p>English Literature Essay</p>
+                                    <span class="event-time">11:59 PM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Attendance Section -->
+        <section id="attendance" class="content-section">
+            <div class="section-header">
+                <h1>My Attendance</h1>
+                <div class="header-actions">
+                    <button class="btn-secondary" onclick="exportAttendance()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Attendance Overview -->
+            <div class="attendance-overview">
+                <div class="attendance-stats">
+                    <div class="attendance-stat">
+                        <h3>This Month</h3>
+                        <div class="stat-value">22/24</div>
+                        <div class="stat-percentage">92%</div>
+                    </div>
+                    <div class="attendance-stat">
+                        <h3>This Week</h3>
+                        <div class="stat-value">4/5</div>
+                        <div class="stat-percentage">80%</div>
+                    </div>
+                    <div class="attendance-stat">
+                        <h3>Today</h3>
+                        <div class="stat-value present-status">Present</div>
+                        <div class="stat-percentage">✓</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Calendar View -->
+            <div class="attendance-calendar">
+                <div class="calendar-header">
+                    <button onclick="previousMonth()">&lt;</button>
+                    <h3 id="currentMonth">August 2025</h3>
+                    <button onclick="nextMonth()">&gt;</button>
+                </div>
+                <div class="calendar-grid" id="attendanceCalendar">
+                    <!-- Calendar will be populated by JavaScript -->
+                </div>
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <div class="legend-color present"></div>
+                        <span>Present</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color absent"></div>
+                        <span>Absent</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color weekend"></div>
+                        <span>Weekend</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Attendance Records -->
+            <div class="recent-attendance">
+                <h3>Recent Attendance Records</h3>
+                <div class="attendance-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Method</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentAttendanceBody">
+                            <tr>
+                                <td>2025-08-14</td>
+                                <td>10:07:56</td>
+                                <td><span class="status active">Present</span></td>
+                                <td><span class="method-badge face-recognition">Face Recognition</span></td>
+                            </tr>
+                            <tr>
+                                <td>2025-08-13</td>
+                                <td>09:45:22</td>
+                                <td><span class="status active">Present</span></td>
+                                <td><span class="method-badge face-recognition">Face Recognition</span></td>
+                            </tr>
+                            <tr>
+                                <td>2025-08-12</td>
+                                <td>10:15:33</td>
+                                <td><span class="status active">Present</span></td>
+                                <td><span class="method-badge face-recognition">Face Recognition</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Other sections placeholders -->
+        <section id="grades" class="content-section">
+            <div class="section-header">
+                <h1>Grades & Results</h1>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-chart-line"></i>
+                <h3>Grades & Results</h3>
+                <p>View your academic performance and exam results</p>
+            </div>
+        </section>
+
+        <section id="schedule" class="content-section">
+            <div class="section-header">
+                <h1>Class Schedule</h1>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-calendar-alt"></i>
+                <h3>Class Schedule</h3>
+                <p>View your weekly class schedule and timetable</p>
+            </div>
+        </section>
+
+        <section id="assignments" class="content-section">
+            <div class="section-header">
+                <h1>Assignments</h1>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-tasks"></i>
+                <h3>Assignments</h3>
+                <p>Track your assignments and submission deadlines</p>
+            </div>
+        </section>
+
+        <section id="messages" class="content-section">
+            <div class="section-header">
+                <h1>Messages</h1>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-envelope"></i>
+                <h3>Messages</h3>
+                <p>Communicate with teachers and receive important notifications</p>
+            </div>
+        </section>
+
+        <section id="announcements" class="content-section">
+            <div class="section-header">
+                <h1>School Announcements</h1>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-bullhorn"></i>
+                <h3>Announcements</h3>
+                <p>Stay updated with the latest school news and announcements</p>
+            </div>
+        </section>
+
+        <section id="library" class="content-section">
+            <div class="section-header">
+                <h1>Library Resources</h1>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-book"></i>
+                <h3>Library</h3>
+                <p>Access digital library resources and book catalog</p>
+            </div>
+        </section>
+
+        <section id="profile" class="content-section">
+            <div class="section-header">
+                <h1>My Profile</h1>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-user"></i>
+                <h3>Student Profile</h3>
+                <p>View and update your personal information</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- User Menu Dropdown -->
+    <div id="userMenuDropdown" class="user-dropdown">
+        <div class="dropdown-content">
+            <a href="#" onclick="showSection('profile')">
+                <i class="fas fa-user"></i> My Profile
+            </a>
+            <a href="#" onclick="showSection('settings')">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+            <hr>
+            <a href="#" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/portals/student.js"></script>
+</body>
+</html>
