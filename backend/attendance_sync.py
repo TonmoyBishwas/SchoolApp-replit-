@@ -208,6 +208,7 @@ def test_api_connection():
         for name, url in urls_to_try:
             try:
                 logger.info(f"🔍 Testing {name} connection: {url.replace('/api', '')}")
+                # Test with public endpoint for connection
                 response = requests.get(f'{url}/attendance/public', timeout=10)
                 if response.status_code == 200:
                     logger.info(f"✅ {name} API server is accessible")
