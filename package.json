@@ -2,11 +2,12 @@
   "name": "cheick-mohamed-school-website",
   "version": "1.0.0",
   "description": "School Management System for Cheick Mohamed School and College - Guinea",
-  "main": "backend/server.js",
+  "main": "start.js",
   "scripts": {
-    "start": "node backend/server.js",
+    "start": "node start.js",
+    "server": "node backend/server.js",
     "dev": "nodemon backend/server.js",
-    "sync": "python backend/attendance_sync.py",
+    "demo": "node populate-demo-data.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {

@@ -1,30 +1,10 @@
-modules = ["nodejs-20", "python-3.11"]
-
-[nix]
-channel = "stable-24_05"
+modules = ["nodejs-20"]
 
 [workspace]
 repl = "."
-depsAwareHotReload = false
 
 [deployment]
-run = ["node", "backend/server.js"]
-deploymentTarget = "cloudrun"
-ignorePorts = false
-
-[languages]
-
-[languages.javascript]
-pattern = "**/{*.js,*.jsx,*.ts,*.tsx,*.json}"
-
-[languages.javascript.languageServer]
-start = "typescript-language-server --stdio"
-
-[languages.python]
-pattern = "**/*.py"
-
-[languages.python.languageServer]
-start = "pylsp"
+run = ["node", "start.js"]
 
 [[ports]]
 localPort = 3000

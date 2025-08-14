@@ -213,20 +213,71 @@ def main():
     print("🏫 Cheick Mohamed School - Attendance Sync Service")
     print("=" * 60)
     
+    # In Replit environment, create demo data automatically
+    if IS_REPLIT:
+        create_demo_data()
+    
     # Test API connection first
     if not test_api_connection():
         print("\n⚠️  Please make sure the web server is running before starting the sync service.")
-        print("   Run: npm start or node backend/server.js")
+        if IS_REPLIT:
+            print("   In Replit: The web server should start automatically")
+        else:
+            print("   Run: npm start or node backend/server.js")
         return
     
     # Check if CSV file exists
     if not os.path.exists(CSV_FILE_PATH):
         logger.warning(f"⚠️  CSV file not found: {CSV_FILE_PATH}")
-        logger.info("The sync service will wait for the file to be created...")
+        if IS_REPLIT:
+            create_demo_data()
+        else:
+            logger.info("The sync service will wait for the file to be created...")
     
     # Start sync service
     sync_service = AttendanceSync()
     sync_service.run()
+
+def create_demo_data():
+    """Create demo attendance data for Replit"""
+    try:
+        import os
+        from datetime import datetime, timedelta
+        
+        # Ensure demo_data directory exists
+        demo_dir = os.path.dirname(CSV_FILE_PATH)
+        os.makedirs(demo_dir, exist_ok=True)
+        
+        # Create demo CSV with recent data
+        current_time = datetime.now()
+        demo_records = []
+        
+        students = [
+            ("Tonmoy Ahmed", "444", "CSE"),
+            ("Ayon Rahman", "1234", "CSE"), 
+            ("Sarah Johnson", "445", "BBA"),
+            ("Ahmed Hassan", "446", "EEE"),
+            ("Fatima Al-Zahra", "447", "Math")
+        ]
+        
+        # Generate attendance records for the last few minutes
+        for i in range(10):
+            time_offset = current_time - timedelta(minutes=i*2)
+            for name, student_id, dept in students[:3]:  # Only first 3 students
+                record_time = time_offset - timedelta(seconds=i*10)
+                demo_records.append(
+                    f"{record_time.strftime('%Y-%m-%d')},{record_time.strftime('%H:%M:%S')},{name},{student_id},{dept},Student"
+                )
+        
+        # Write demo data
+        with open(CSV_FILE_PATH, 'w', encoding='utf-8') as f:
+            f.write("Date,Time,Name,ID,Dept,Role\n")
+            f.write("\n".join(demo_records))
+        
+        print(f"✅ Created demo attendance data: {CSV_FILE_PATH}")
+        
+    except Exception as e:
+        print(f"❌ Error creating demo data: {e}")
 
 if __name__ == '__main__':
     main()
