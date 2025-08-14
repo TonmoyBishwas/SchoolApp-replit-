@@ -9,11 +9,15 @@ class AttendanceAPIClient {
     }
     
     getAPIBaseURL() {
-        // Check if we're on Replit
-        if (window.location.hostname.includes('.repl.co')) {
-            return `${window.location.protocol}//${window.location.host}/api`;
+        // Check if we're on Replit (handles both .repl.co and .replit.dev domains)
+        if (window.location.hostname.includes('.repl.co') || 
+            window.location.hostname.includes('.replit.dev')) {
+            const apiURL = `${window.location.protocol}//${window.location.host}/api`;
+            console.log(`🌐 Detected Replit environment: ${apiURL}`);
+            return apiURL;
         }
         // Local development
+        console.log('🖥️ Using localhost environment');
         return 'http://localhost:3000/api';
     }
 
@@ -26,7 +30,29 @@ class AttendanceAPIClient {
     // Fetch real attendance data from API
     async fetchAttendanceData(limit = 50) {
         try {
-            // Try authenticated endpoint first
+            console.log(`🔍 Attempting to fetch attendance data from: ${this.baseURL}`);
+            
+            // Try public endpoint first (more reliable)
+            console.log('📡 Trying public endpoint...');
+            const publicResponse = await fetch(`${this.baseURL}/attendance/public?limit=${limit}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (publicResponse.ok) {
+                const result = await publicResponse.json();
+                console.log(`✅ Fetched ${result.data.length} records from public API`);
+                if (result.success && result.data && result.data.length > 0) {
+                    return result.data;
+                }
+            } else {
+                console.log(`⚠️ Public API returned status: ${publicResponse.status}`);
+            }
+            
+            // Try authenticated endpoint as fallback
+            console.log('🔐 Trying authenticated endpoint...');
             const authResponse = await fetch(`${this.baseURL}/attendance?limit=${limit}`, {
                 headers: {
                     'Authorization': `Bearer ${this.getAuthToken()}`,
@@ -37,23 +63,19 @@ class AttendanceAPIClient {
             if (authResponse.ok) {
                 const result = await authResponse.json();
                 console.log(`✅ Fetched ${result.data.length} records from authenticated API`);
-                return result.data || [];
-            }
-            
-            // Fallback to public endpoint
-            console.log('Auth failed, trying public endpoint...');
-            const publicResponse = await fetch(`${this.baseURL}/attendance/public?limit=${limit}`);
-            
-            if (publicResponse.ok) {
-                const result = await publicResponse.json();
-                console.log(`✅ Fetched ${result.data.length} records from public API`);
-                return result.data || [];
+                if (result.success && result.data && result.data.length > 0) {
+                    return result.data;
+                }
             } else {
-                console.log('Using demo data - API not available');
-                return this.getDemoData();
+                console.log(`⚠️ Auth API returned status: ${authResponse.status}`);
             }
+            
+            console.log('⚠️ No data from API endpoints, using demo data');
+            return this.getDemoData();
+            
         } catch (error) {
-            console.log('API not available, using demo data:', error.message);
+            console.error('❌ API fetch error:', error);
+            console.log('🔄 Falling back to demo data');
             return this.getDemoData();
         }
     }

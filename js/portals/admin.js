@@ -14,13 +14,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Load attendance data immediately
         setTimeout(() => {
             console.log('🚀 Starting attendance data load...');
+            console.log('🌐 Current location:', window.location.href);
             loadAttendanceData().catch(error => {
-                console.error('Error loading attendance data:', error);
+                console.error('❌ Critical error loading attendance data:', error);
                 // Use demo data as fallback
+                console.log('🔄 Loading demo data as fallback...');
                 const rawData = window.attendanceAPI.getDemoData();
                 attendanceData = window.attendanceAPI.formatAttendanceData(rawData);
+                clearPlaceholderData();
                 updateAttendanceTable();
                 updateLiveAttendanceFeed(attendanceData.slice(0, 5));
+                console.log('✅ Demo data loaded successfully');
             });
         }, 100);
         

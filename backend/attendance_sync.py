@@ -29,7 +29,10 @@ if IS_REPLIT:
     API_BASE_URL = f'https://{os.getenv("REPL_SLUG")}.{os.getenv("REPL_OWNER")}.repl.co/api'
 else:
     CSV_FILE_PATH = os.path.join(PROJECT_ROOT, 'auto_attend_app', 'Pattendance_log.csv')
-    API_BASE_URL = 'http://localhost:3000/api'
+    # Try Replit first, fallback to localhost
+    REPLIT_URL = 'https://44021d36-a389-44cb-a902-5606fc6a0bd2-00-38nnftr3rse0.janeway.replit.dev/api'
+    LOCALHOST_URL = 'http://localhost:3000/api'
+    API_BASE_URL = REPLIT_URL  # Will test both in connection function
 
 ATTENDANCE_ENDPOINT = f'{API_BASE_URL}/attendance/realtime'
 CHECK_INTERVAL = 5  # seconds
@@ -193,20 +196,46 @@ class AttendanceSync:
 
 def test_api_connection():
     """Test if the API server is accessible"""
-    try:
-        response = requests.get(f'{API_BASE_URL}/attendance', timeout=5)
-        if response.status_code in [200, 401]:  # 401 is expected without auth
-            logger.info("✅ API server is accessible")
-            return True
-        else:
-            logger.error(f"❌ API server returned status code: {response.status_code}")
+    global API_BASE_URL, ATTENDANCE_ENDPOINT
+    
+    # If not on Replit, try both Replit and localhost
+    if not IS_REPLIT:
+        urls_to_try = [
+            ('Replit', REPLIT_URL),
+            ('Localhost', LOCALHOST_URL)
+        ]
+        
+        for name, url in urls_to_try:
+            try:
+                logger.info(f"🔍 Testing {name} connection: {url.replace('/api', '')}")
+                response = requests.get(f'{url}/attendance/public', timeout=10)
+                if response.status_code == 200:
+                    logger.info(f"✅ {name} API server is accessible")
+                    API_BASE_URL = url
+                    ATTENDANCE_ENDPOINT = f'{API_BASE_URL}/attendance/realtime'
+                    return True
+                else:
+                    logger.warning(f"⚠️ {name} returned status code: {response.status_code}")
+            except requests.exceptions.ConnectionError:
+                logger.warning(f"⚠️ Cannot connect to {name}: {url.replace('/api', '')}")
+            except Exception as e:
+                logger.warning(f"⚠️ Error testing {name} connection: {e}")
+        
+        logger.error("❌ Cannot connect to any API server (Replit or Localhost)")
+        return False
+    else:
+        # On Replit, just test the current API
+        try:
+            response = requests.get(f'{API_BASE_URL}/attendance/public', timeout=5)
+            if response.status_code == 200:
+                logger.info("✅ API server is accessible")
+                return True
+            else:
+                logger.error(f"❌ API server returned status code: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"❌ Error testing API connection: {e}")
             return False
-    except requests.exceptions.ConnectionError:
-        logger.error("❌ Cannot connect to API server. Make sure the server is running on http://localhost:3000")
-        return False
-    except Exception as e:
-        logger.error(f"❌ Error testing API connection: {e}")
-        return False
 
 def main():
     """Main function"""
