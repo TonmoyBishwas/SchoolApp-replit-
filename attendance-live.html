@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Attendance - Cheick Mohamed School</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/attendance-live.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="attendance-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="school-branding">
+                    <div class="school-emblem">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div class="school-info">
+                        <h1>Cheick Mohamed School</h1>
+                        <p class="subtitle">Live Attendance System</p>
+                    </div>
+                </div>
+                
+                <div class="live-indicator">
+                    <div class="status-dot"></div>
+                    <span>LIVE</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="attendance-main">
+        <div class="container">
+            
+            <!-- Statistics Section -->
+            <section class="attendance-stats">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="todayCount">--</h3>
+                            <p>Today's Attendance</p>
+                            <span class="stat-time" id="todayTime">Loading...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalCount">--</h3>
+                            <p>Total Records</p>
+                            <span class="stat-time" id="totalTime">All time</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="lastUpdate">--</h3>
+                            <p>Last Update</p>
+                            <span class="stat-time" id="lastUpdateTime">Never</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Live Feed Section -->
+            <section class="live-attendance-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-broadcast-tower"></i> Live Attendance Feed</h2>
+                    <div class="header-actions">
+                        <button class="refresh-btn" onclick="refreshAttendance()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                        <button class="auto-refresh-toggle" id="autoRefreshToggle" onclick="toggleAutoRefresh()">
+                            <i class="fas fa-play"></i> Auto Refresh: ON
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading-state" id="loadingState">
+                    <div class="loading-spinner">
+                        <i class="fas fa-sync fa-spin"></i>
+                    </div>
+                    <p>Loading live attendance data...</p>
+                </div>
+
+                <!-- Attendance Records -->
+                <div class="attendance-records" id="attendanceRecords" style="display: none;">
+                    <!-- Records will be populated by JavaScript -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-calendar-times"></i>
+                    </div>
+                    <h3>No Attendance Records</h3>
+                    <p>No attendance data found. Make sure the face recognition system is running.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Navigation Back -->
+    <div class="navigation-back">
+        <a href="index.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Main Site
+        </a>
+        <a href="portals/admin.html" class="admin-btn">
+            <i class="fas fa-user-shield"></i> Admin Portal
+        </a>
+    </div>
+
+    <script src="js/attendance-live.js"></script>
+</body>
+</html>
