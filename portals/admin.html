@@ -6,6 +6,8 @@
     <title>Admin Portal - Cheick Mohamed School</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/portals/portal.css">
+    <link rel="stylesheet" href="../css/portals/modal-fix.css">
+    <link rel="stylesheet" href="../css/portals/form-section.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -33,6 +35,21 @@
                 <div class="user-menu-toggle" onclick="toggleUserMenu()">
                     <i class="fas fa-chevron-down"></i>
                 </div>
+                <!-- User Menu Dropdown -->
+                <div id="userMenuDropdown" class="user-dropdown">
+                    <div class="dropdown-content">
+                        <a href="#" onclick="showSection('dashboard')">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                        <a href="#" onclick="showProfile()">
+                            <i class="fas fa-user"></i> Profile
+                        </a>
+                        <hr>
+                        <a href="#" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
@@ -54,10 +71,12 @@
                     <i class="fas fa-user-graduate"></i>
                     <span>Student Management</span>
                 </a>
+                <!-- Admissions section hidden
                 <a href="#admissions" class="nav-item" onclick="showSection('admissions')">
                     <i class="fas fa-user-plus"></i>
                     <span>Admissions</span>
                 </a>
+                -->
             </div>
 
             <div class="nav-section">
@@ -122,15 +141,12 @@
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
+                <a href="#" class="nav-item logout-nav-item" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
             </div>
         </nav>
-
-        <div class="sidebar-footer">
-            <button class="logout-btn" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Logout</span>
-            </button>
-        </div>
     </aside>
 
     <!-- Main Content -->
@@ -149,9 +165,9 @@
                         <i class="fas fa-user-graduate"></i>
                     </div>
                     <div class="stat-content">
-                        <h3 id="totalStudents">523</h3>
+                        <h3 id="totalStudents">0</h3>
                         <p>Total Students</p>
-                        <span class="stat-change positive">+12 this month</span>
+                        <span id="student-trend" class="stat-change">Loading...</span>
                     </div>
                 </div>
 
@@ -160,9 +176,9 @@
                         <i class="fas fa-chalkboard-teacher"></i>
                     </div>
                     <div class="stat-content">
-                        <h3 id="totalTeachers">35</h3>
+                        <h3 id="totalTeachers">0</h3>
                         <p>Teaching Staff</p>
-                        <span class="stat-change positive">+2 this month</span>
+                        <span id="teacher-trend" class="stat-change">Loading...</span>
                     </div>
                 </div>
 
@@ -171,9 +187,9 @@
                         <i class="fas fa-school"></i>
                     </div>
                     <div class="stat-content">
-                        <h3 id="totalClasses">24</h3>
+                        <h3 id="totalClasses">0</h3>
                         <p>Active Classes</p>
-                        <span class="stat-change neutral">No change</span>
+                        <span id="class-trend" class="stat-change">Loading...</span>
                     </div>
                 </div>
 
@@ -182,9 +198,9 @@
                         <i class="fas fa-calendar-check"></i>
                     </div>
                     <div class="stat-content">
-                        <h3 id="attendanceRate">94%</h3>
+                        <h3 id="attendanceRate">0%</h3>
                         <p>Attendance Rate</p>
-                        <span class="stat-change positive">+2% this week</span>
+                        <span id="attendance-trend" class="stat-change">Loading...</span>
                     </div>
                 </div>
             </div>
@@ -197,9 +213,10 @@
                         <i class="fas fa-broadcast-tower"></i>
                         <span>Live Attendance</span>
                     </button>
-                    <button class="action-btn" onclick="showSection('admissions')">
+                    <!-- New Admission button replaced with Add Student button -->
+                    <button class="action-btn" onclick="showSection('students'); showAddStudentModal()">
                         <i class="fas fa-user-plus"></i>
-                        <span>New Admission</span>
+                        <span>Add Student</span>
                     </button>
                     <button class="action-btn" onclick="showSection('teachers')">
                         <i class="fas fa-plus"></i>
@@ -279,7 +296,7 @@
         <section id="students" class="content-section">
             <div class="section-header">
                 <h1>Student Management</h1>
-                <button class="btn-primary" onclick="showAddStudentModal()">
+                <button class="btn-primary" onclick="showSection('add-student')">
                     <i class="fas fa-plus"></i> Add Student
                 </button>
             </div>
@@ -306,20 +323,202 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
+                    <tbody id="studentsTableBody">
+                        <!-- Student rows will be populated dynamically -->
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 20px;">Loading students...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Add Student Section -->
+        <section id="add-student" class="content-section">
+            <div class="section-header">
+                <h1>Add New Student</h1>
+                <button class="btn-secondary" onclick="showSection('students')">
+                    <i class="fas fa-arrow-left"></i> Back to Students
+                </button>
+            </div>
+            
+            <div class="form-container">
+                <form id="addStudentForm">
+                    <div class="form-card">
+                        <h2>Student Information</h2>
+                        <div class="form-group">
+                            <label for="studentName">Full Name</label>
+                            <input type="text" id="studentName" name="studentName" required>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="studentId">Student ID</label>
+                                <input type="text" id="studentId" name="studentId" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="studentDept">Department</label>
+                                <input type="text" id="studentDept" name="studentDept" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="studentClass">Class</label>
+                                <input type="text" id="studentClass" name="studentClass" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="studentStatus">Status</label>
+                                <select id="studentStatus" name="studentStatus">
+                                    <option value="active" selected>Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="studentEmail">Email</label>
+                                <input type="email" id="studentEmail" name="studentEmail">
+                            </div>
+                            <div class="form-group">
+                                <label for="studentPhone">Phone</label>
+                                <input type="tel" id="studentPhone" name="studentPhone">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-card">
+                        <h2>Student Photos</h2>
+                        <p class="form-info">Please upload up to 5 photos of the student. These will be used for identification and records.</p>
+                        
+                        <div class="photo-upload-grid" id="photoUploadGrid">
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="photoPreview1"></div>
+                                <label for="studentPhoto1" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 1</span>
+                                </label>
+                                <input type="file" id="studentPhoto1" name="studentPhotos" accept="image/*" style="display: none;" onchange="previewStudentPhoto(this, 1)">
+                            </div>
+                            
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="photoPreview2"></div>
+                                <label for="studentPhoto2" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 2</span>
+                                </label>
+                                <input type="file" id="studentPhoto2" name="studentPhotos" accept="image/*" style="display: none;" onchange="previewStudentPhoto(this, 2)">
+                            </div>
+                            
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="photoPreview3"></div>
+                                <label for="studentPhoto3" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 3</span>
+                                </label>
+                                <input type="file" id="studentPhoto3" name="studentPhotos" accept="image/*" style="display: none;" onchange="previewStudentPhoto(this, 3)">
+                            </div>
+                            
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="photoPreview4"></div>
+                                <label for="studentPhoto4" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 4</span>
+                                </label>
+                                <input type="file" id="studentPhoto4" name="studentPhotos" accept="image/*" style="display: none;" onchange="previewStudentPhoto(this, 4)">
+                            </div>
+                            
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="photoPreview5"></div>
+                                <label for="studentPhoto5" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 5</span>
+                                </label>
+                                <input type="file" id="studentPhoto5" name="studentPhotos" accept="image/*" style="display: none;" onchange="previewStudentPhoto(this, 5)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-card">
+                        <h2>Login Credentials</h2>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="studentUsername">Username</label>
+                                <input type="text" id="studentUsername" name="studentUsername" required>
+                                <small>Username for student login</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="studentPassword">Password</label>
+                                <input type="password" id="studentPassword" name="studentPassword" required>
+                                <small>Password for student login</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="showSection('students')">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Student</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Admissions Section -->
+        <section id="admissions" class="content-section">
+            <div class="section-header">
+                <h1>Admissions Management</h1>
+                <button class="btn-primary">
+                    <i class="fas fa-plus"></i> New Application
+                </button>
+            </div>
+            
+            <div class="data-table-container">
+                <div class="table-filters">
+                    <input type="text" placeholder="Search applications..." class="search-input">
+                    <select class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>App ID</th>
+                            <th>Student Name</th>
+                            <th>Applied For</th>
+                            <th>Submitted On</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         <tr>
-                            <td>444</td>
-                            <td>Tonmoy Ahmed</td>
-                            <td>CSE</td>
-                            <td>Computer Science</td>
-                            <td><span class="status active">Active</span></td>
+                            <td>A2025-089</td>
+                            <td>Hassan Mahmud</td>
+                            <td>Class 10 (Science)</td>
+                            <td>Aug 15, 2025</td>
+                            <td><span class="status pending">Pending</span></td>
                             <td>
                                 <button class="btn-icon" title="View"><i class="fas fa-eye"></i></button>
-                                <button class="btn-icon" title="Edit"><i class="fas fa-edit"></i></button>
-                                <button class="btn-icon danger" title="Delete"><i class="fas fa-trash"></i></button>
+                                <button class="btn-icon" title="Approve"><i class="fas fa-check"></i></button>
+                                <button class="btn-icon danger" title="Reject"><i class="fas fa-times"></i></button>
                             </td>
                         </tr>
-                        <!-- More student rows would be populated here -->
+                        <tr>
+                            <td>A2025-090</td>
+                            <td>Sarah Khan</td>
+                            <td>Class 11 (Commerce)</td>
+                            <td>Aug 16, 2025</td>
+                            <td><span class="status active">Approved</span></td>
+                            <td>
+                                <button class="btn-icon" title="View"><i class="fas fa-eye"></i></button>
+                                <button class="btn-icon" title="Enroll"><i class="fas fa-user-plus"></i></button>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -407,27 +606,299 @@
             </div>
         </section>
 
-        <!-- Add more sections as needed -->
+        <!-- Staff Section -->
+        <section id="staff" class="content-section">
+            <div class="section-header">
+                <h1>Staff Management</h1>
+                <button class="btn-primary">
+                    <i class="fas fa-plus"></i> Add Staff Member
+                </button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-users-cog"></i>
+                <h3>Staff Management</h3>
+                <p>Manage non-teaching staff, roles, and responsibilities</p>
+            </div>
+        </section>
+
+        <!-- Exams Section -->
+        <section id="exams" class="content-section">
+            <div class="section-header">
+                <h1>Exam Management</h1>
+                <button class="btn-primary">
+                    <i class="fas fa-plus"></i> Schedule Exam
+                </button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-file-alt"></i>
+                <h3>Exam Management</h3>
+                <p>Schedule and manage exams, grades, and results</p>
+            </div>
+        </section>
+
+        <!-- Fees Section -->
+        <section id="fees" class="content-section">
+            <div class="section-header">
+                <h1>Fee Management</h1>
+                <button class="btn-primary">
+                    <i class="fas fa-plus"></i> Add Fee Structure
+                </button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-money-check-alt"></i>
+                <h3>Fee Management</h3>
+                <p>Manage student fees, payments, and due dates</p>
+            </div>
+        </section>
+
+        <!-- Accounting Section -->
+        <section id="accounting" class="content-section">
+            <div class="section-header">
+                <h1>Accounting</h1>
+                <button class="btn-primary">
+                    <i class="fas fa-plus"></i> Add Transaction
+                </button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-calculator"></i>
+                <h3>Accounting</h3>
+                <p>Manage school finances, expenses, and budget</p>
+            </div>
+        </section>
+
+        <!-- Messages Section -->
+        <section id="messages" class="content-section">
+            <div class="section-header">
+                <h1>Messages</h1>
+                <button class="btn-primary">
+                    <i class="fas fa-plus"></i> Compose Message
+                </button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-envelope"></i>
+                <h3>Messaging System</h3>
+                <p>Send and receive messages to/from teachers, students and parents</p>
+            </div>
+        </section>
+
+        <!-- Announcements Section -->
+        <section id="announcements" class="content-section">
+            <div class="section-header">
+                <h1>Announcements</h1>
+                <button class="btn-primary">
+                    <i class="fas fa-plus"></i> New Announcement
+                </button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-bullhorn"></i>
+                <h3>Announcements</h3>
+                <p>Create and manage school-wide announcements</p>
+            </div>
+        </section>
+
+        <!-- Reports Section -->
+        <section id="reports" class="content-section">
+            <div class="section-header">
+                <h1>Reports</h1>
+                <button class="btn-primary">
+                    <i class="fas fa-download"></i> Generate Report
+                </button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-chart-bar"></i>
+                <h3>Reports</h3>
+                <p>Generate and view various school reports and analytics</p>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings" class="content-section">
+            <div class="section-header">
+                <h1>System Settings</h1>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-cogs"></i>
+                <h3>System Settings</h3>
+                <p>Configure school settings, academic year, and system preferences</p>
+            </div>
+        </section>
     </main>
 
-    <!-- User Menu Dropdown -->
-    <div id="userMenuDropdown" class="user-dropdown">
-        <div class="dropdown-content">
-            <a href="#" onclick="showSection('settings')">
-                <i class="fas fa-cog"></i> Settings
-            </a>
-            <a href="#" onclick="showProfile()">
-                <i class="fas fa-user"></i> Profile
-            </a>
-            <hr>
-            <a href="#" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
-        </div>
-    </div>
+    <!-- User Menu Dropdown moved to header -->
 
     <script src="../js/main.js"></script>
     <script src="../js/api-client.js"></script>
     <script src="../js/portals/admin.js"></script>
+    <script>
+        // Ensure all functions are properly loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if showSection function exists and make it global if needed
+            if (typeof showSection !== 'function') {
+                console.error('showSection function was not properly loaded. Attempting to fix...');
+                window.showSection = function(sectionId) {
+                    // Hide all sections
+                    const sections = document.querySelectorAll('.content-section');
+                    sections.forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    
+                    // Remove active state from all nav items
+                    const navItems = document.querySelectorAll('.nav-item');
+                    navItems.forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    
+                    // Show selected section
+                    const targetSection = document.getElementById(sectionId);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                    }
+                    
+                    // Add active state to corresponding nav item
+                    const activeNavItem = document.querySelector(`[onclick="showSection('${sectionId}')"]`);
+                    if (activeNavItem) {
+                        activeNavItem.classList.add('active');
+                    }
+                    
+                    // Close mobile sidebar if open
+                    if (window.innerWidth <= 768) {
+                        const sidebar = document.querySelector('.portal-sidebar');
+                        sidebar.classList.remove('active');
+                    }
+                };
+                console.log('showSection function has been fixed');
+            }
+        });
+    </script>
+
+    <!-- Add Student Modal -->
+    <!-- Old modal removed in favor of the section approach -->
+    <div id="addStudentModal" class="modal" style="display: none !important;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Student</h2>
+                <span class="close-modal" onclick="closeAddStudentModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="addStudentForm">
+                    <div class="form-group">
+                        <label for="studentName">Full Name</label>
+                        <input type="text" id="studentName" name="studentName" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="studentId">Student ID</label>
+                            <input type="text" id="studentId" name="studentId" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentDept">Department</label>
+                            <input type="text" id="studentDept" name="studentDept" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="studentClass">Class</label>
+                            <input type="text" id="studentClass" name="studentClass" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentStatus">Status</label>
+                            <select id="studentStatus" name="studentStatus">
+                                <option value="active" selected>Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="studentEmail">Email</label>
+                            <input type="email" id="studentEmail" name="studentEmail">
+                        </div>
+                        <div class="form-group">
+                            <label for="studentPhone">Phone</label>
+                            <input type="tel" id="studentPhone" name="studentPhone">
+                        </div>
+                    </div>
+                    
+                    <div class="form-section-title">Student Photos (Up to 5 Photos)</div>
+                    
+                    <div class="photo-upload-container">
+                        <div class="photo-upload-instructions">
+                            <p>Please upload up to 5 photos of the student. These will be used for identification and records.</p>
+                        </div>
+                        
+                        <div class="photo-upload-grid" id="photoUploadGrid">
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="photoPreview1"></div>
+                                <label for="studentPhoto1" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 1</span>
+                                </label>
+                                <input type="file" id="studentPhoto1" name="studentPhotos" accept="image/*" style="display: none;" onchange="previewStudentPhoto(this, 1)">
+                            </div>
+                            
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="photoPreview2"></div>
+                                <label for="studentPhoto2" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 2</span>
+                                </label>
+                                <input type="file" id="studentPhoto2" name="studentPhotos" accept="image/*" style="display: none;" onchange="previewStudentPhoto(this, 2)">
+                            </div>
+                            
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="photoPreview3"></div>
+                                <label for="studentPhoto3" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 3</span>
+                                </label>
+                                <input type="file" id="studentPhoto3" name="studentPhotos" accept="image/*" style="display: none;" onchange="previewStudentPhoto(this, 3)">
+                            </div>
+                            
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="photoPreview4"></div>
+                                <label for="studentPhoto4" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 4</span>
+                                </label>
+                                <input type="file" id="studentPhoto4" name="studentPhotos" accept="image/*" style="display: none;" onchange="previewStudentPhoto(this, 4)">
+                            </div>
+                            
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="photoPreview5"></div>
+                                <label for="studentPhoto5" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 5</span>
+                                </label>
+                                <input type="file" id="studentPhoto5" name="studentPhotos" accept="image/*" style="display: none;" onchange="previewStudentPhoto(this, 5)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Login Credentials</div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="studentUsername">Username</label>
+                            <input type="text" id="studentUsername" name="studentUsername" required>
+                            <small>Username for student login</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentPassword">Password</label>
+                            <input type="password" id="studentPassword" name="studentPassword" required>
+                            <small>Password for student login</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeAddStudentModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Student</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

@@ -6,6 +6,7 @@ let isLoggedIn = false;
 
 // Demo credentials for different roles
 const demoCredentials = {
+    superadmin: { username: 'superadmin', password: 'superadmin123', name: 'Super Administrator', id: 'SA001' },
     admin: { username: 'admin123', password: 'admin123', name: 'Administrator', id: 'ADM001' },
     teacher: { username: 'teacher001', password: 'teacher123', name: 'John Doe', id: 'TCH001' },
     student: { username: 'student444', password: 'student123', name: 'Tonmoy Ahmed', id: '444' },
@@ -188,7 +189,28 @@ function clearLoginForm() {
     }
 }
 
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('password');
+    const eyeIcon = document.querySelector('.toggle-password i');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+    }
+}
+
 function loginAs(role) {
+    // If it's superadmin, go directly to the superadmin portal
+    if (role === 'superadmin') {
+        window.location.href = 'portals/superadmin.html';
+        return;
+    }
+    
     const modal = document.getElementById('loginModal');
     const roleSelect = document.getElementById('role');
     const loginTitle = document.getElementById('loginTitle');
@@ -211,46 +233,123 @@ function loginAs(role) {
 }
 
 // ===== AUTHENTICATION FUNCTIONS =====
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
     
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
-    const role = document.getElementById('role').value;
     
     // Validate inputs
-    if (!username || !password || !role) {
+    if (!username || !password) {
         showNotification('Please fill in all fields', 'error');
         return;
     }
     
-    // Check credentials
-    const credentials = demoCredentials[role];
-    if (credentials && credentials.username === username && credentials.password === password) {
-        // Successful login
-        currentUser = {
-            role: role,
-            username: username,
-            name: credentials.name,
-            id: credentials.id,
-            loginTime: new Date().toISOString()
-        };
+    // Disable form inputs and show loading
+    const submitButton = document.querySelector('#loginForm button[type="submit"]');
+    const originalButtonText = submitButton.innerHTML;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+    submitButton.disabled = true;
+    const inputs = document.querySelectorAll('#loginForm input, #loginForm select');
+    inputs.forEach(input => input.disabled = true);
+    
+    try {
+        // Get base URL for API
+        const baseURL = getAPIBaseURL();
         
-        isLoggedIn = true;
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        // API login attempt
+        const response = await fetch(`${baseURL}/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
         
-        showNotification(`Welcome ${credentials.name}!`, 'success');
-        closeLoginModal();
-        updateLoginButton();
+        if (response.ok) {
+            const result = await response.json();
+            
+            if (result.success) {
+                // Successful login
+                currentUser = {
+                    role: result.user.role,
+                    username: result.user.username,
+                    name: result.user.name,
+                    id: result.user.id,
+                    token: result.token,
+                    institution_id: result.user.institution_id,
+                    institution_name: result.user.institution_name,
+                    loginTime: new Date().toISOString()
+                };
+                
+                isLoggedIn = true;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                closeLoginModal();
+                updateLoginButton();
+                
+                // Redirect to appropriate portal immediately
+                redirectToPortal(result.user.role);
+                
+                return;
+            }
+        }
         
-        // Redirect to appropriate portal
-        setTimeout(() => {
-            redirectToPortal(role);
-        }, 1500);
+        // If API login failed or returned error, try demo credentials as fallback
+        console.log('API login failed, trying demo credentials');
         
-    } else {
-        showNotification('Invalid credentials. Please check username, password, and role.', 'error');
+        // Check all possible demo credentials
+        let foundCredential = null;
+        let userRole = null;
+        
+        for (const [role, credentials] of Object.entries(demoCredentials)) {
+            if (credentials.username === username && credentials.password === password) {
+                foundCredential = credentials;
+                userRole = role;
+                break;
+            }
+        }
+        
+        if (foundCredential) {
+            // Successful demo login
+            currentUser = {
+                role: userRole,
+                username: username,
+                name: foundCredential.name,
+                id: foundCredential.id,
+                loginTime: new Date().toISOString()
+            };
+            
+            isLoggedIn = true;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            closeLoginModal();
+            updateLoginButton();
+            
+            // Redirect to appropriate portal immediately
+            redirectToPortal(userRole);
+        } else {
+            showNotification('Invalid credentials. Please check username, password, and role.', 'error');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showNotification('Login failed. Please try again.', 'error');
+    } finally {
+        // Re-enable form inputs
+        submitButton.innerHTML = originalButtonText;
+        submitButton.disabled = false;
+        inputs.forEach(input => input.disabled = false);
     }
+}
+
+function getAPIBaseURL() {
+    // Check if we're on Replit
+    if (window.location.hostname.includes('.repl.co') || 
+        window.location.hostname.includes('.replit.dev')) {
+        return `${window.location.protocol}//${window.location.host}/api`;
+    }
+    // Local development
+    return 'http://localhost:3000/api';
 }
 
 function logout() {
@@ -292,6 +391,9 @@ function toggleUserMenu() {
         return;
     }
     
+    // Use the login button's parent as the container
+    const loginBtnParent = document.querySelector('.login-btn').parentElement;
+    
     userMenu = document.createElement('div');
     userMenu.className = 'user-menu';
     userMenu.innerHTML = `
@@ -328,8 +430,10 @@ function toggleUserMenu() {
         padding: 15px;
     `;
     
-    document.querySelector('.nav-logo').style.position = 'relative';
-    document.querySelector('.nav-logo').appendChild(userMenu);
+    // Add position: relative to login button's parent
+    const loginBtn = document.querySelector('.login-btn');
+    loginBtn.parentElement.style.position = 'relative';
+    loginBtn.parentElement.appendChild(userMenu);
     
     // Close menu when clicking outside
     setTimeout(() => {
@@ -344,6 +448,7 @@ function toggleUserMenu() {
 
 function redirectToPortal(role) {
     const portalUrls = {
+        superadmin: 'portals/superadmin.html',
         admin: 'portals/admin.html',
         teacher: 'portals/teacher.html',
         student: 'portals/student.html',

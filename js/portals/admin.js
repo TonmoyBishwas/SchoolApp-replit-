@@ -12,23 +12,32 @@ document.addEventListener('DOMContentLoaded', function() {
         checkAuthentication();
         
         // Load attendance data immediately
-        setTimeout(() => {
+        setTimeout(async () => {
             console.log('🚀 Starting attendance data load...');
             console.log('🌐 Current location:', window.location.href);
-            loadAttendanceData().catch(error => {
+            
+            try {
+                // Check API availability first
+                const isAPIAvailable = await isRealAttendanceAvailable();
+                
+                await loadAttendanceData();
+                
+                // Only start live updates if API is available
+                if (isAPIAvailable) {
+                    startLiveAttendanceFeed();
+                } else {
+                    console.log('⚠️ API not available, live updates disabled');
+                }
+            } catch (error) {
                 console.error('❌ Critical error loading attendance data:', error);
-                // Use demo data as fallback
-                console.log('🔄 Loading demo data as fallback...');
-                const rawData = window.attendanceAPI.getDemoData();
-                attendanceData = window.attendanceAPI.formatAttendanceData(rawData);
+                // Show empty data as fallback
+                console.log('🔄 Showing empty attendance data...');
+                attendanceData = [];
                 clearPlaceholderData();
                 updateAttendanceTable();
-                updateLiveAttendanceFeed(attendanceData.slice(0, 5));
-                console.log('✅ Demo data loaded successfully');
-            });
+                console.log('✅ Data initialized successfully');
+            }
         }, 100);
-        
-        startLiveAttendanceFeed();
     } catch (error) {
         console.error('Error initializing admin portal:', error);
     }
@@ -56,11 +65,36 @@ function checkAuthentication() {
         window.location.href = '../index.html';
         return;
     }
+    
+    // Update UI with institution info if available
+    if (currentUser.institution_name) {
+        updateInstitutionUI(currentUser);
+    }
 }
 
 function getCurrentUser() {
     const userData = localStorage.getItem('currentUser');
     return userData ? JSON.parse(userData) : null;
+}
+
+function updateInstitutionUI(user) {
+    // Update the portal header with institution name
+    const portalTypeElem = document.querySelector('.portal-type');
+    if (portalTypeElem && user.institution_name) {
+        portalTypeElem.textContent = `${user.institution_name} - Admin Portal`;
+    }
+    
+    // Update the school info section with institution name
+    const schoolInfoElem = document.querySelector('.school-info h2');
+    if (schoolInfoElem && user.institution_name) {
+        schoolInfoElem.textContent = user.institution_name;
+    }
+    
+    // Update the user name display
+    const userNameElem = document.getElementById('userName');
+    if (userNameElem && user.name) {
+        userNameElem.textContent = user.name;
+    }
 }
 
 // ===== EVENT LISTENERS =====
@@ -130,6 +164,9 @@ function loadSectionData(sectionId) {
         case 'students':
             loadStudentData();
             break;
+        case 'add-student':
+            prepareAddStudentForm();
+            break;
         case 'teachers':
             loadTeacherData();
             break;
@@ -163,20 +200,98 @@ function logout() {
 }
 
 // ===== DASHBOARD FUNCTIONS =====
-function updateDashboardStats() {
-    // Simulate real-time stats updates
-    const stats = {
-        totalStudents: 523,
-        totalTeachers: 35,
-        totalClasses: 24,
-        attendanceRate: 94
-    };
+async function updateDashboardStats() {
+    try {
+        // Show loading state
+        document.querySelectorAll('.stat-card .stat-value').forEach(el => {
+            el.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        });
+        
+        // Get base URL for API
+        const baseURL = getAPIBaseURL();
+        
+        // Get the auth token from the current user session
+        const user = getCurrentUser();
+        const token = user ? user.token : null;
+        
+        // Fetch institution stats
+        const response = await fetch(`${baseURL}/institution/stats`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch institution stats');
+        }
+        
+        const result = await response.json();
+        const stats = result.data || {
+            totalStudents: 523,
+            totalTeachers: 35,
+            totalClasses: 24,
+            attendanceRate: 94,
+            newStudentsThisMonth: 12,
+            newTeachersThisMonth: 2,
+            attendanceRateChange: 2
+        };
+        
+        // Update stat cards with animation
+        animateStatCard('totalStudents', stats.totalStudents);
+        animateStatCard('totalTeachers', stats.totalTeachers);
+        animateStatCard('totalClasses', stats.totalClasses);
+        animateStatCard('attendanceRate', stats.attendanceRate + '%');
+        
+        // Update trend indicators
+        updateTrendIndicator('student-trend', stats.newStudentsThisMonth);
+        updateTrendIndicator('teacher-trend', stats.newTeachersThisMonth);
+        updateTrendIndicator('attendance-trend', stats.attendanceRateChange);
+    } catch (error) {
+        console.error('Error updating dashboard stats:', error);
+        // Use fallback data
+        const stats = {
+            totalStudents: 523,
+            totalTeachers: 35,
+            totalClasses: 24,
+            attendanceRate: 94
+        };
+        
+        animateStatCard('totalStudents', stats.totalStudents);
+        animateStatCard('totalTeachers', stats.totalTeachers);
+        animateStatCard('totalClasses', stats.totalClasses);
+        animateStatCard('attendanceRate', stats.attendanceRate + '%');
+    }
+}
+
+function getAPIBaseURL() {
+    // Check if we're on Replit
+    if (window.location.hostname.includes('.repl.co') || 
+        window.location.hostname.includes('.replit.dev')) {
+        return `${window.location.protocol}//${window.location.host}/api`;
+    }
+    // Local development
+    return 'http://localhost:3000/api';
+}
+
+function updateTrendIndicator(elementId, value) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
     
-    // Update stat cards with animation
-    animateStatCard('totalStudents', stats.totalStudents);
-    animateStatCard('totalTeachers', stats.totalTeachers);
-    animateStatCard('totalClasses', stats.totalClasses);
-    animateStatCard('attendanceRate', stats.attendanceRate + '%');
+    if (value > 0) {
+        element.innerHTML = `+${value} this month`;
+        element.classList.add('positive');
+        element.classList.remove('negative', 'neutral');
+    } else if (value < 0) {
+        element.innerHTML = `${value} this month`;
+        element.classList.add('negative');
+        element.classList.remove('positive', 'neutral');
+    } else {
+        element.innerHTML = 'No change';
+        element.classList.add('neutral');
+        element.classList.remove('positive', 'negative');
+    }
 }
 
 function animateStatCard(elementId, finalValue) {
@@ -278,14 +393,12 @@ async function loadAttendanceData() {
                 
                 console.log(`✅ Loaded ${attendanceData.length} attendance records`);
             } else {
-                console.log('⚠️ No attendance data found, using demo data');
-                const rawData = window.attendanceAPI.getDemoData();
-                attendanceData = window.attendanceAPI.formatAttendanceData(rawData);
+                console.log('⚠️ No attendance data found');
+                attendanceData = [];
             }
         } else {
-            console.log('📊 API not available, loading demo attendance data...');
-            const rawData = window.attendanceAPI.getDemoData();
-            attendanceData = window.attendanceAPI.formatAttendanceData(rawData);
+            console.log('⚠️ API not available, no attendance data will be shown');
+            attendanceData = [];
         }
         
         updateAttendanceTable();
@@ -301,18 +414,13 @@ async function loadAttendanceData() {
     } catch (error) {
         console.error('❌ Error loading attendance data:', error);
         
-        // Fallback to demo data
-        try {
-            const rawData = window.attendanceAPI.getDemoData();
-            attendanceData = window.attendanceAPI.formatAttendanceData(rawData);
-            updateAttendanceTable();
-            console.log('✅ Fallback to demo data successful');
-        } catch (fallbackError) {
-            console.error('❌ Even demo data failed:', fallbackError);
-        }
+        // Show empty attendance data
+        attendanceData = [];
+        updateAttendanceTable();
+        console.log('⚠️ No attendance data available');
         
         if (typeof showNotification === 'function') {
-            showNotification('Using demo attendance data', 'warning');
+            showNotification('Unable to load attendance data', 'warning');
         }
     }
 }
@@ -320,6 +428,11 @@ async function loadAttendanceData() {
 function updateAttendanceTable() {
     const tableBody = document.getElementById('attendanceTableBody');
     if (!tableBody) return;
+    
+    if (!attendanceData || attendanceData.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No attendance records found</td></tr>';
+        return;
+    }
     
     tableBody.innerHTML = attendanceData.map(record => `
         <tr>
@@ -407,7 +520,15 @@ function exportAttendance() {
 }
 
 // ===== LIVE ATTENDANCE FEED =====
-function startLiveAttendanceFeed() {
+async function startLiveAttendanceFeed() {
+    // Check if API is available before starting
+    const isAPIAvailable = await isRealAttendanceAvailable();
+    
+    if (!isAPIAvailable) {
+        console.log('⚠️ API not available, live attendance feed disabled');
+        return;
+    }
+    
     isLiveAttendanceActive = true;
     
     // Start polling for new attendance data every 5 seconds
@@ -416,6 +537,8 @@ function startLiveAttendanceFeed() {
             checkForNewAttendance();
         }
     }, 5000);
+    
+    console.log('✅ Live attendance feed started');
 }
 
 function stopLiveAttendanceFeed() {
@@ -430,34 +553,51 @@ async function checkForNewAttendance() {
         // Fetch fresh attendance data from API
         const isAPIAvailable = await isRealAttendanceAvailable();
         
-        if (isAPIAvailable) {
-            const freshData = await window.attendanceAPI.fetchAttendanceData(10); // Get last 10 records
-            const formattedData = window.attendanceAPI.formatAttendanceData(freshData);
-            
-            // Check if we have new records compared to current data
-            const newRecords = formattedData.filter(record => {
-                return !attendanceData.some(existing => 
-                    existing.date === record.date && 
-                    existing.time === record.time && 
-                    existing.id === record.id
-                );
-            });
-            
-            if (newRecords.length > 0) {
-                console.log(`Found ${newRecords.length} new attendance records`);
-                
-                // Add new records to the beginning of our data
-                attendanceData = [...newRecords, ...attendanceData].slice(0, 100);
-                
-                // Update the attendance table
-                updateAttendanceTable();
-                
-                // Update the live feed with new records
-                updateLiveAttendanceFeed(newRecords);
-                
-                // Update dashboard stats
-                updateAttendanceStats();
+        if (!isAPIAvailable) {
+            // If API is not available, don't try to fetch new data
+            return;
+        }
+        
+        const freshData = await window.attendanceAPI.fetchAttendanceData(10); // Get last 10 records
+        
+        // Verify we actually got data back
+        if (!freshData || freshData.length === 0) {
+            return;
+        }
+        
+        const formattedData = window.attendanceAPI.formatAttendanceData(freshData);
+        
+        // Check if we have new records compared to current data
+        const newRecords = formattedData.filter(record => {
+            // Additional validation to ensure we have proper data
+            if (!record.id && !record.student_id) {
+                return false;
             }
+            
+            return !attendanceData.some(existing => 
+                existing.date === record.date && 
+                existing.time === record.time && 
+                existing.id === record.id
+            );
+        });
+        
+        if (newRecords.length > 0) {
+            console.log(`Found ${newRecords.length} new attendance records`);
+            
+            // Add new records to the beginning of our data
+            attendanceData = [...newRecords, ...attendanceData].slice(0, 100);
+            
+            // Update the attendance table
+            updateAttendanceTable();
+            
+            // Only update live feed if we have valid records with names and IDs
+            const validRecords = newRecords.filter(r => (r.name || r.student_name) && (r.id || r.student_id));
+            if (validRecords.length > 0) {
+                updateLiveAttendanceFeed(validRecords);
+            }
+            
+            // Update dashboard stats
+            updateAttendanceStats();
         }
     } catch (error) {
         console.error('Error checking for new attendance:', error);
@@ -481,6 +621,12 @@ function updateLiveAttendanceFeed(newRecords) {
     const placeholder = attendanceFeed.querySelector('.feed-placeholder');
     if (placeholder) {
         placeholder.remove();
+    }
+    
+    // Check if we have records to display
+    if (!newRecords || newRecords.length === 0) {
+        attendanceFeed.innerHTML = '<div class="feed-placeholder">No attendance records available</div>';
+        return;
     }
     
     // Add new records to the feed
@@ -544,13 +690,337 @@ function getTimeDisplay(date, time) {
 }
 
 // ===== STUDENT MANAGEMENT =====
-function loadStudentData() {
-    // Placeholder for student data loading
-    console.log('Loading student data...');
+async function loadStudentData() {
+    try {
+        console.log('Loading student data...');
+        
+        // Get authentication token and user information
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const token = user.token;
+        
+        if (!token) {
+            console.log('No authentication token found');
+            updateStudentsTable([]);
+            updateStudentStats(0);
+            return;
+        }
+        
+        // Fetch students from API - the backend already filters by institution_id for admin users
+        const response = await fetch(`${window.attendanceAPI.baseURL}/students`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+                console.log(`Loaded ${result.data.length} students from API`);
+                updateStudentsTable(result.data);
+                updateStudentStats(result.data.length);
+            } else {
+                console.log('API returned success but no data');
+                updateStudentsTable([]);
+                updateStudentStats(0);
+            }
+        } else {
+            console.log(`API request failed with status ${response.status}`);
+            updateStudentsTable([]);
+            updateStudentStats(0);
+        }
+    } catch (error) {
+        console.error('Error loading student data:', error);
+        updateStudentsTable([]);
+        updateStudentStats(0);
+    }
 }
 
-function showAddStudentModal() {
-    showNotification('Add Student feature coming soon!', 'info');
+function updateStudentsTable(students) {
+    const tableBody = document.getElementById('studentsTableBody');
+    if (!tableBody) {
+        console.error('Students table body not found');
+        return;
+    }
+    
+    if (students.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No students found</td></tr>';
+        return;
+    }
+    
+    tableBody.innerHTML = students.map(student => `
+        <tr>
+            <td>${student.id}</td>
+            <td>${student.name}</td>
+            <td>${student.class || student.department || 'N/A'}</td>
+            <td>${student.department}</td>
+            <td><span class="status ${student.status === 'active' ? 'active' : 'inactive'}">${student.status === 'active' ? 'Active' : 'Inactive'}</span></td>
+            <td>
+                <button class="btn-icon" title="View" onclick="viewStudent('${student.id}')"><i class="fas fa-eye"></i></button>
+                <button class="btn-icon" title="Edit" onclick="editStudent('${student.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn-icon danger" title="Delete" onclick="deleteStudent('${student.id}')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateStudentStats(count) {
+    const totalStudentsElement = document.getElementById('totalStudents');
+    if (totalStudentsElement) {
+        // Animate the count
+        animateStatCard('totalStudents', count);
+    }
+}
+
+function viewStudent(studentId) {
+    showNotification(`View student ${studentId} - Feature coming soon!`, 'info');
+}
+
+function editStudent(studentId) {
+    showNotification(`Edit student ${studentId} - Feature coming soon!`, 'info');
+}
+
+async function deleteStudent(studentId) {
+    if (confirm(`Are you sure you want to delete student ${studentId}?`)) {
+        try {
+            // Get token from currentUser in localStorage
+            const currentUser = getCurrentUser();
+            if (!currentUser || !currentUser.token) {
+                showNotification('Authentication error. Please log in again.', 'error');
+                return;
+            }
+            const token = currentUser.token;
+            
+            // Show loading notification
+            showNotification(`Deleting student ${studentId}...`, 'info');
+            
+            // Make API request to delete student
+            const response = await fetch(`${window.attendanceAPI.baseURL}/students/${studentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                try {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Failed to delete student: ${response.status}`);
+                } catch (e) {
+                    throw new Error(`Failed to delete student: ${response.status} ${response.statusText}`);
+                }
+            }
+            
+            // Show success notification
+            showNotification(`Student ${studentId} deleted successfully`, 'success');
+            
+            // Reload student data to reflect the change
+            loadStudentData();
+            
+        } catch (error) {
+            console.error('Error deleting student:', error);
+            showNotification(`Error deleting student: ${error.message}`, 'error');
+        }
+    }
+}
+
+function prepareAddStudentForm() {
+    // Clear the form
+    document.getElementById('addStudentForm').reset();
+    
+    // Generate a unique student ID suggestion
+    const randomId = Math.floor(1000 + Math.random() * 9000);
+    document.getElementById('studentId').value = randomId;
+    
+    // Generate a username suggestion from the ID
+    document.getElementById('studentUsername').value = `student${randomId}`;
+    
+    // Clear any previous photo previews
+    for (let i = 1; i <= 5; i++) {
+        const previewElement = document.getElementById(`photoPreview${i}`);
+        if (previewElement) {
+            previewElement.innerHTML = '';
+            previewElement.style.backgroundImage = '';
+        }
+    }
+    
+    // Setup form submission
+    setupAddStudentForm();
+}
+
+// Function to preview student photos when selected
+function previewStudentPhoto(input, photoIndex) {
+    const previewElement = document.getElementById(`photoPreview${photoIndex}`);
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            // Create image element
+            previewElement.innerHTML = `
+                <img src="${e.target.result}" alt="Student Photo ${photoIndex}">
+                <div class="remove-photo" onclick="removeStudentPhoto(${photoIndex})">
+                    <i class="fas fa-times"></i>
+                </div>
+            `;
+        }
+        
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Function to remove a selected photo
+function removeStudentPhoto(photoIndex) {
+    const inputElement = document.getElementById(`studentPhoto${photoIndex}`);
+    const previewElement = document.getElementById(`photoPreview${photoIndex}`);
+    
+    // Clear the file input
+    inputElement.value = '';
+    
+    // Clear the preview
+    previewElement.innerHTML = '';
+}
+
+// Function no longer needed - removed
+// Navigation is now handled by showSection('students')
+
+function setupAddStudentForm() {
+    const form = document.getElementById('addStudentForm');
+    
+    // Remove any existing event listeners
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    
+    // Add new event listener
+    newForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        // Disable submit button and show loading state
+        const submitBtn = newForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+        
+        try {
+            await addNewStudent(newForm);
+            showSection('students'); // Go back to students section
+            showNotification('Student added successfully', 'success');
+            
+            // Reload student data
+            loadStudentData();
+        } catch (error) {
+            console.error('Error adding student:', error);
+            showNotification('Error adding student: ' + error.message, 'error');
+        } finally {
+            // Restore button state
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    });
+}
+
+async function addNewStudent(form) {
+    // Get student data
+    const studentName = form.studentName.value.trim();
+    const studentId = form.studentId.value.trim();
+    
+    // Check for student photos
+    let hasPhotos = false;
+    for (let i = 1; i <= 5; i++) {
+        const photoInput = document.getElementById(`studentPhoto${i}`);
+        if (photoInput.files && photoInput.files[0]) {
+            hasPhotos = true;
+            break;
+        }
+    }
+    
+    // Create a FormData object to handle file uploads
+    const formData = new FormData();
+    
+    // Add student details to FormData
+    formData.append('id', studentId);
+    formData.append('name', studentName);
+    formData.append('department', form.studentDept.value.trim());
+    formData.append('class', form.studentClass.value.trim());
+    formData.append('status', form.studentStatus.value);
+    formData.append('email', form.studentEmail.value.trim());
+    formData.append('phone', form.studentPhone.value.trim());
+    formData.append('username', form.studentUsername.value.trim());
+    formData.append('password', form.studentPassword.value.trim());
+    
+    // Add photos to FormData if available
+    for (let i = 1; i <= 5; i++) {
+        const photoInput = document.getElementById(`studentPhoto${i}`);
+        if (photoInput.files && photoInput.files[0]) {
+            formData.append('photos', photoInput.files[0]);
+        }
+    }
+    
+    // Get current user's token
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const token = currentUser.token;
+    
+    // Add institution ID if available
+    if (currentUser.institution_id) {
+        formData.append('institution_id', currentUser.institution_id);
+    }
+    
+    if (!token) {
+        throw new Error('You must be logged in to add students');
+    }
+    
+    // First attempt to create the student with basic info
+    let response;
+    
+    if (hasPhotos) {
+        // Send API request with photos
+        response = await fetch(`${window.attendanceAPI.baseURL}/students`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+                // Don't set Content-Type when sending FormData with files
+            },
+            body: formData
+        });
+    } else {
+        // If no photos, use the regular endpoint with JSON
+        const studentData = {
+            id: studentId,
+            name: studentName,
+            department: form.studentDept.value.trim(),
+            class: form.studentClass.value.trim(),
+            status: form.studentStatus.value,
+            email: form.studentEmail.value.trim(),
+            phone: form.studentPhone.value.trim(),
+            username: form.studentUsername.value.trim(),
+            password: form.studentPassword.value.trim()
+        };
+        
+        response = await fetch(`${window.attendanceAPI.baseURL}/students`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(studentData)
+        });
+    }
+    
+    if (!response.ok) {
+        try {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to add student');
+        } catch (e) {
+            // If response is not valid JSON
+            throw new Error(`Failed to add student: ${response.status} ${response.statusText}`);
+        }
+    }
+    
+    try {
+        return await response.json();
+    } catch (e) {
+        throw new Error('Invalid response from server');
+    }
 }
 
 // ===== TEACHER MANAGEMENT =====
@@ -632,8 +1102,8 @@ window.addEventListener('beforeunload', function() {
 });
 
 // ===== CSS ANIMATIONS =====
-const animationStyles = document.createElement('style');
-animationStyles.textContent = `
+const notificationStyles = document.createElement('style');
+notificationStyles.textContent = `
     @keyframes slideInRight {
         from {
             transform: translateX(100%);
@@ -671,4 +1141,4 @@ animationStyles.textContent = `
         margin-left: auto;
     }
 `;
-document.head.appendChild(animationStyles);
+document.head.appendChild(notificationStyles);

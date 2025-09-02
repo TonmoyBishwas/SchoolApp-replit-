@@ -1,0 +1,93 @@
+/* Additional styles to fix modal layout issues */
+.modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-bottom: 1.5rem; /* Ensure bottom padding */
+}
+
+.modal-content {
+    overflow: hidden; /* Prevent content from spilling out */
+}
+
+/* Form section title styling */
+.form-section-title {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Ensure form actions stay at the bottom */
+.form-actions {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* Style the close button */
+.close-modal {
+    cursor: pointer;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Ensure form rows display properly */
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-row .form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Add bottom margin to form groups */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+/* Style small text */
+.form-group small {
+    display: block;
+    margin-top: 0.25rem;
+    color: #6c757d;
+    font-size: 0.875em;
+}
+
+/* Improve modal overflow behavior */
+@media (max-height: 800px) {
+    .modal-content {
+        margin: 1rem auto;
+        max-height: 90vh;
+    }
+    
+    .modal-body {
+        max-height: calc(90vh - 60px); /* Accounting for header */
+        overflow-y: auto;
+    }
+}
+
+/* Add responsive handling for smaller screens */
+@media (max-width: 576px) {
+    .form-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .form-actions {
+        flex-direction: column-reverse;
+        gap: 0.5rem;
+    }
+    
+    .form-actions button {
+        width: 100%;
+    }
+}

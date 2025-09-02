@@ -26,8 +26,14 @@ class AttendanceAPIClient {
         const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
         return user.token || null;
     }
+    
+    // Get current institution ID from the logged-in user
+    getCurrentInstitutionId() {
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        return user.institution_id || null;
+    }
 
-    // Fetch real attendance data from API
+    // Fetch attendance data from API
     async fetchAttendanceData(limit = 50) {
         try {
             console.log(`🔍 Attempting to fetch attendance data from: ${this.baseURL}`);
@@ -70,13 +76,13 @@ class AttendanceAPIClient {
                 console.log(`⚠️ Auth API returned status: ${authResponse.status}`);
             }
             
-            console.log('⚠️ No data from API endpoints, using demo data');
-            return this.getDemoData();
+            console.log('⚠️ No data from API endpoints');
+            return [];
             
         } catch (error) {
             console.error('❌ API fetch error:', error);
-            console.log('🔄 Falling back to demo data');
-            return this.getDemoData();
+            console.log('⚠️ Unable to fetch attendance data');
+            return [];
         }
     }
 
@@ -119,13 +125,13 @@ class AttendanceAPIClient {
             console.log('Error fetching attendance stats:', error);
         }
         
-        // Return demo stats if API fails
+        // Return empty stats if API fails
         return {
-            todayAttendance: 485,
-            weekAttendance: 2315,
-            monthAttendance: 9876,
-            totalStudents: 523,
-            todayAttendanceRate: '92.7'
+            todayAttendance: 0,
+            weekAttendance: 0,
+            monthAttendance: 0,
+            totalStudents: 0,
+            todayAttendanceRate: '0.0'
         };
     }
 
@@ -148,37 +154,10 @@ class AttendanceAPIClient {
         }
     }
 
-    // Demo data for when API is not available
+    // Empty placeholder for when API is not available
     getDemoData() {
-        return [
-            {
-                date: '2025-08-14',
-                time: '10:07:56',
-                student_name: 'Tonmoy Ahmed',
-                student_id: '444',
-                department: 'CSE',
-                status: 'present',
-                face_recognition: true
-            },
-            {
-                date: '2025-08-14',
-                time: '10:08:56',
-                student_name: 'Sarah Johnson',
-                student_id: '445',
-                department: 'BBA',
-                status: 'present',
-                face_recognition: true
-            },
-            {
-                date: '2025-08-14',
-                time: '10:09:56',
-                student_name: 'Ahmed Hassan',
-                student_id: '446',
-                department: 'EEE',
-                status: 'present',
-                face_recognition: true
-            }
-        ];
+        console.log('⚠️ Demo data has been disabled');
+        return [];
     }
 
     // Format attendance data for display
@@ -231,6 +210,14 @@ class RealTimeAttendanceUpdater {
 
     async checkForUpdates() {
         try {
+            // First check if API is available before attempting to fetch updates
+            const isAPIAvailable = await isRealAttendanceAvailable();
+            
+            if (!isAPIAvailable) {
+                // Skip update if API isn't available
+                return;
+            }
+            
             const newRecords = await window.attendanceAPI.fetchNewAttendanceData();
             if (newRecords && newRecords.length > 0) {
                 // Notify all portals about new attendance data
@@ -242,6 +229,11 @@ class RealTimeAttendanceUpdater {
     }
 
     notifyPortals(newRecords) {
+        // Skip processing if records don't have proper data
+        if (!newRecords || !newRecords.length || !newRecords[0].student_name && !newRecords[0].name) {
+            return;
+        }
+        
         // Update live attendance feed in admin portal
         if (typeof updateLiveAttendanceFeed === 'function') {
             updateLiveAttendanceFeed(newRecords);
@@ -257,15 +249,21 @@ class RealTimeAttendanceUpdater {
             updateDashboardStats();
         }
 
-        // Show notification for new attendance
+        // Only show notifications for records with valid data - disable notifications for now
+        // Commenting out notifications to prevent false alerts
+        /*
         newRecords.forEach(record => {
-            if (typeof showNotification === 'function') {
+            if (typeof showNotification === 'function' && 
+                (record.student_name || record.name) && 
+                (record.student_id || record.id)) {
+                
                 showNotification(
                     `New attendance: ${record.student_name || record.name} marked present`,
                     'info'
                 );
             }
         });
+        */
     }
 }
 
@@ -294,12 +292,46 @@ async function testAPIConnection() {
     }
 }
 
+// Get student photos
+async function fetchStudentPhotos(studentId) {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log('No authentication token found');
+            return [];
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/students/${studentId}/photos`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+                return result.data;
+            }
+        }
+        
+        return [];
+    } catch (error) {
+        console.error('Error fetching student photos:', error);
+        return [];
+    }
+}
+
 // Check if real attendance data is available
 async function isRealAttendanceAvailable() {
     const isConnected = await testAPIConnection();
     console.log(isConnected ? 
         '✅ API server connected - using real attendance data' : 
-        '⚠️ API server not available - using demo data'
+        '⚠️ API server not available'
     );
     return isConnected;
 }
+
+// Export student photo functions to window object
+window.fetchStudentPhotos = fetchStudentPhotos;

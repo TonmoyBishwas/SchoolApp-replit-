@@ -228,6 +228,59 @@ body {
     box-shadow: var(--shadow-lg);
 }
 
+/* User Menu Dropdown */
+.user-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: var(--white);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    min-width: 220px;
+    z-index: 1000;
+    overflow: hidden;
+    animation: fadeIn 0.3s ease;
+}
+
+.user-menu-content {
+    padding: 15px;
+}
+
+.user-menu-content .user-info {
+    margin-bottom: 10px;
+}
+
+.user-menu-content strong {
+    display: block;
+    font-weight: var(--font-weight-semibold);
+    color: var(--dark-gray);
+}
+
+.user-menu-content small {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.user-menu-content hr {
+    margin: 10px 0;
+    border: none;
+    border-top: 1px solid var(--border-color);
+}
+
+.user-menu-content a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    color: var(--dark-gray);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.user-menu-content a:hover {
+    color: var(--primary-color);
+}
+
 .hamburger {
     display: none;
     flex-direction: column;
@@ -482,6 +535,10 @@ body {
     color: var(--white);
     background: linear-gradient(135deg, var(--navy-blue), var(--royal-blue));
     box-shadow: var(--shadow-md);
+}
+
+.superadmin-portal .portal-icon {
+    background: linear-gradient(135deg, #4c1d95, #7c3aed);
 }
 
 .admin-portal .portal-icon {
