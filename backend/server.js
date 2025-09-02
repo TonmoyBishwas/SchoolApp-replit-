@@ -1153,7 +1153,7 @@ app.post('/api/attendance/upload', authenticateToken, csvUpload.single('csvFile'
 });
 
 // Real-time attendance endpoint (for face recognition system)
-app.post('/api/attendance/realtime', (req, res) => {
+app.post('/api/attendance/realtime', async (req, res) => {
     const { date, time, name, id, dept, role, institution_code } = req.body;
 
     if (!date || !time || !name || !id || !dept) {
