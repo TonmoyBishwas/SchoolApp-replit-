@@ -650,7 +650,7 @@ function authenticateToken(req, res, next) {
     if (!token) {
         // For development/demo purposes, allow requests without token
         console.log('Warning: Request without token - proceeding for development purposes');
-        req.user = { id: 0, role: 'demo', name: 'Demo User' };
+        req.user = { id: 0, role: 'demo', name: 'Demo User', institution_id: 4 }; // Use Dhaka College for testing
         return next();
     }
 
@@ -658,7 +658,7 @@ function authenticateToken(req, res, next) {
         if (err) {
             console.error('Token verification failed:', err.message);
             // For development, we'll proceed anyway but with limited permissions
-            req.user = { id: 0, role: 'demo', name: 'Demo User' };
+            req.user = { id: 0, role: 'demo', name: 'Demo User', institution_id: 4 }; // Use Dhaka College for testing
             return next();
         }
         
