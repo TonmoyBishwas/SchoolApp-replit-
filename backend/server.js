@@ -1857,7 +1857,7 @@ app.post('/api/students', authenticateToken, (req, res) => {
                                             photo_directory: photoDirectory,
                                             photos: req.files ? req.files.map(file => ({
                                                 filename: file.filename,
-                                                path: file.path.replace(/\/g, '/').replace(path.join(__dirname, '..').replace(/\/g, '/'), '')
+                                                path: file.path.replace(/\\/g, '/').replace(path.join(__dirname, '..').replace(/\\/g, '/'), '')
                                             })) : [],
                                             driveUpload: driveUploadResults.length > 0 ? 'success' : 'pending'
                                         } 
@@ -2189,7 +2189,7 @@ app.post('/api/teachers', authenticateToken, (req, res) => {
                                                 photo_directory: photoDirectory,
                                                 photos: req.files ? req.files.map(file => ({
                                                     filename: file.filename,
-                                                    path: file.path.replace(/\/g, '/').replace(path.join(__dirname, '..').replace(/\/g, '/'), '')
+                                                    path: file.path.replace(/\\/g, '/').replace(path.join(__dirname, '..').replace(/\\/g, '/'), '')
                                                 })) : [],
                                                 driveUpload: driveUploadResults.length > 0 ? 'success' : 'pending'
                                             } 
