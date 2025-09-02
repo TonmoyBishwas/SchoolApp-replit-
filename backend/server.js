@@ -34,7 +34,8 @@ const corsOptions = {
             'http://localhost:3000',
             'https://school-app.replit.com',
             'https://school-app.replit.dev',
-            'https://school-app.e1ectr0n.repl.co'
+            'https://school-app.e1ectr0n.repl.co',
+            'https://schul.e1ectr0n.replit.dev'
         ];
         
         if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
