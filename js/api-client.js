@@ -11,7 +11,8 @@ class AttendanceAPIClient {
     getAPIBaseURL() {
         // Check if we're on Replit (handles both .repl.co and .replit.dev domains)
         if (window.location.hostname.includes('.repl.co') || 
-            window.location.hostname.includes('.replit.dev')) {
+            window.location.hostname.includes('.replit.dev') ||
+            window.location.hostname.includes('.replit.app')) {
             const apiURL = `${window.location.protocol}//${window.location.host}/api`;
             console.log(`🌐 Detected Replit environment: ${apiURL}`);
             return apiURL;
@@ -285,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Test API connectivity
 async function testAPIConnection() {
     try {
-        const response = await fetch('http://localhost:3000/api/attendance');
+        const response = await fetch(this.baseURL + '/attendance');
         return response.status === 401; // 401 means server is running but needs auth
     } catch (error) {
         return false;

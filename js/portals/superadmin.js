@@ -447,7 +447,7 @@ function saveInstitutionToLocalStorage(institutionData) {
 function getAPIBaseURL() {
     // Check if we're on Replit
     if (window.location.hostname.includes('.repl.co') || 
-        window.location.hostname.includes('.replit.dev')) {
+        window.location.hostname.includes('.replit.dev') || window.location.hostname.includes('.replit.app')) {
         return `${window.location.protocol}//${window.location.host}/api`;
     }
     // Local development
