@@ -1776,13 +1776,74 @@ app.post('/api/students', authenticateToken, (req, res) => {
                                     return res.status(500).json({ error: 'Error creating user account: ' + err.message });
                                 }
                                 
-                                db.run('COMMIT', err => {
+                                db.run('COMMIT', async (err) => {
                                     if (err) {
                                         console.error('Error committing transaction:', err);
                                         return res.status(500).json({ error: 'Transaction error' });
                                     }
                                     
                                     console.log(`Student ${name} created with ID ${id} and username ${username}`);
+                                    
+                                    // Try to upload photos to Google Drive
+                                    let driveUploadResults = [];
+                                    if (req.files && req.files.length > 0) {
+                                        try {
+                                            // Get institution info for Drive folder structure
+                                            db.get('SELECT name, institution_code FROM institutions WHERE id = ?', [req.user.institution_id], async (err, institution) => {
+                                                if (!err && institution) {
+                                                    try {
+                                                        console.log('Attempting Google Drive upload for student photos...');
+                                                        
+                                                        // Create or get institution folders
+                                                        const institutionFolders = await googleDrive.createInstitutionFolders(
+                                                            institution.name, 
+                                                            institution.institution_code
+                                                        );
+                                                        
+                                                        // Create user folder
+                                                        const userFolder = await googleDrive.createUserFolder(
+                                                            name, 
+                                                            'student', 
+                                                            institutionFolders
+                                                        );
+                                                        
+                                                        // Upload each photo
+                                                        for (const file of req.files) {
+                                                            const uploadResult = await googleDrive.uploadFile(
+                                                                file.path,
+                                                                file.originalname || file.filename,
+                                                                userFolder.folderId,
+                                                                file.mimetype
+                                                            );
+                                                            driveUploadResults.push({
+                                                                originalName: file.originalname || file.filename,
+                                                                driveFileId: uploadResult.fileId,
+                                                                driveFolderId: userFolder.folderId
+                                                            });
+                                                        }
+                                                        
+                                                        console.log(`Successfully uploaded ${driveUploadResults.length} photos to Google Drive for student ${name}`);
+                                                        
+                                                        // Update student record with Drive folder info
+                                                        db.run('UPDATE students SET drive_folder_id = ?, drive_photo_urls = ? WHERE id = ?', [
+                                                            userFolder.folderId,
+                                                            JSON.stringify(driveUploadResults),
+                                                            id
+                                                        ], (updateErr) => {
+                                                            if (updateErr) console.error('Error updating student with Drive info:', updateErr);
+                                                        });
+                                                        
+                                                    } catch (driveError) {
+                                                        console.error('Error uploading to Google Drive:', driveError);
+                                                    }
+                                                }
+                                            });
+                                        } catch (driveError) {
+                                            console.error('Error with Google Drive operation:', driveError);
+                                        }
+                                    }
+                                    
+                                    // Send response immediately (don't wait for Drive upload)
                                     res.status(201).json({ 
                                         success: true, 
                                         data: { 
@@ -1796,8 +1857,9 @@ app.post('/api/students', authenticateToken, (req, res) => {
                                             photo_directory: photoDirectory,
                                             photos: req.files ? req.files.map(file => ({
                                                 filename: file.filename,
-                                                path: file.path.replace(/\\/g, '/').replace(path.join(__dirname, '..').replace(/\\/g, '/'), '')
-                                            })) : []
+                                                path: file.path.replace(/\/g, '/').replace(path.join(__dirname, '..').replace(/\/g, '/'), '')
+                                            })) : [],
+                                            driveUpload: driveUploadResults.length > 0 ? 'success' : 'pending'
                                         } 
                                     });
                                 });
@@ -2046,13 +2108,74 @@ app.post('/api/teachers', authenticateToken, (req, res) => {
                                         return res.status(500).json({ error: 'Error creating user account: ' + err.message });
                                     }
                                     
-                                    db.run('COMMIT', err => {
+                                    db.run('COMMIT', async (err) => {
                                         if (err) {
                                             console.error('Error committing transaction:', err);
                                             return res.status(500).json({ error: 'Transaction error' });
                                         }
                                         
                                         console.log(`Teacher ${name} created with ID ${id} and username ${username}`);
+                                        
+                                        // Try to upload photos to Google Drive
+                                        let driveUploadResults = [];
+                                        if (req.files && req.files.length > 0) {
+                                            try {
+                                                // Get institution info for Drive folder structure
+                                                db.get('SELECT name, institution_code FROM institutions WHERE id = ?', [req.user.institution_id], async (err, institution) => {
+                                                    if (!err && institution) {
+                                                        try {
+                                                            console.log('Attempting Google Drive upload for teacher photos...');
+                                                            
+                                                            // Create or get institution folders
+                                                            const institutionFolders = await googleDrive.createInstitutionFolders(
+                                                                institution.name, 
+                                                                institution.institution_code
+                                                            );
+                                                            
+                                                            // Create user folder
+                                                            const userFolder = await googleDrive.createUserFolder(
+                                                                name, 
+                                                                'teacher', 
+                                                                institutionFolders
+                                                            );
+                                                            
+                                                            // Upload each photo
+                                                            for (const file of req.files) {
+                                                                const uploadResult = await googleDrive.uploadFile(
+                                                                    file.path,
+                                                                    file.originalname || file.filename,
+                                                                    userFolder.folderId,
+                                                                    file.mimetype
+                                                                );
+                                                                driveUploadResults.push({
+                                                                    originalName: file.originalname || file.filename,
+                                                                    driveFileId: uploadResult.fileId,
+                                                                    driveFolderId: userFolder.folderId
+                                                                });
+                                                            }
+                                                            
+                                                            console.log(`Successfully uploaded ${driveUploadResults.length} photos to Google Drive for teacher ${name}`);
+                                                            
+                                                            // Update teacher record with Drive folder info
+                                                            db.run('UPDATE teachers SET drive_folder_id = ?, drive_photo_urls = ? WHERE id = ?', [
+                                                                userFolder.folderId,
+                                                                JSON.stringify(driveUploadResults),
+                                                                id
+                                                            ], (updateErr) => {
+                                                                if (updateErr) console.error('Error updating teacher with Drive info:', updateErr);
+                                                            });
+                                                            
+                                                        } catch (driveError) {
+                                                            console.error('Error uploading to Google Drive:', driveError);
+                                                        }
+                                                    }
+                                                });
+                                            } catch (driveError) {
+                                                console.error('Error with Google Drive operation:', driveError);
+                                            }
+                                        }
+                                        
+                                        // Send response immediately (don't wait for Drive upload)
                                         res.status(201).json({ 
                                             success: true, 
                                             data: { 
@@ -2063,7 +2186,12 @@ app.post('/api/teachers', authenticateToken, (req, res) => {
                                                 status, 
                                                 username,
                                                 institution_id: req.user.institution_id,
-                                                photo_directory: photoDirectory
+                                                photo_directory: photoDirectory,
+                                                photos: req.files ? req.files.map(file => ({
+                                                    filename: file.filename,
+                                                    path: file.path.replace(/\/g, '/').replace(path.join(__dirname, '..').replace(/\/g, '/'), '')
+                                                })) : [],
+                                                driveUpload: driveUploadResults.length > 0 ? 'success' : 'pending'
                                             } 
                                         });
                                     });
