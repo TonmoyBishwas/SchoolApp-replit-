@@ -170,11 +170,15 @@ function loadSectionData(sectionId) {
         case 'teachers':
             loadTeacherData();
             break;
+        case 'add-teacher':
+            prepareAddTeacherForm();
+            break;
         case 'dashboard':
             updateDashboardStats();
             loadRecentActivity();
             break;
     }
+}
 }
 
 // ===== USER MENU FUNCTIONS =====
@@ -1014,9 +1018,334 @@ async function addNewStudent(form) {
 }
 
 // ===== TEACHER MANAGEMENT =====
-function loadTeacherData() {
-    // Placeholder for teacher data loading
-    console.log('Loading teacher data...');
+async function loadTeacherData() {
+    try {
+        console.log('Loading teacher data...');
+        
+        // Get authentication token and user information
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const token = user.token;
+        
+        if (!token) {
+            console.log('No authentication token found');
+            updateTeachersTable([]);
+            updateTeacherStats(0);
+            return;
+        }
+        
+        // Fetch teachers from API - the backend already filters by institution_id for admin users
+        const response = await fetch(`${window.attendanceAPI.baseURL}/teachers`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+                console.log(`Loaded ${result.data.length} teachers from API`);
+                updateTeachersTable(result.data);
+                updateTeacherStats(result.data.length);
+            } else {
+                console.log('API returned success but no data');
+                updateTeachersTable([]);
+                updateTeacherStats(0);
+            }
+        } else {
+            console.log(`API request failed with status ${response.status}`);
+            updateTeachersTable([]);
+            updateTeacherStats(0);
+        }
+    } catch (error) {
+        console.error('Error loading teacher data:', error);
+        updateTeachersTable([]);
+        updateTeacherStats(0);
+    }
+}
+
+function updateTeachersTable(teachers) {
+    const tableBody = document.getElementById('teachersTableBody');
+    if (!tableBody) {
+        console.error('Teachers table body not found');
+        return;
+    }
+    
+    if (teachers.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No teachers found</td></tr>';
+        return;
+    }
+    
+    tableBody.innerHTML = teachers.map(teacher => `
+        <tr>
+            <td>${teacher.id}</td>
+            <td>${teacher.name}</td>
+            <td>${teacher.department}</td>
+            <td>${teacher.subject || 'N/A'}</td>
+            <td><span class="status ${teacher.status === 'active' ? 'active' : 'inactive'}">${teacher.status === 'active' ? 'Active' : 'Inactive'}</span></td>
+            <td>
+                <button class="btn-icon" title="View" onclick="viewTeacher('${teacher.id}')"><i class="fas fa-eye"></i></button>
+                <button class="btn-icon" title="Edit" onclick="editTeacher('${teacher.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn-icon danger" title="Delete" onclick="deleteTeacher('${teacher.id}')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateTeacherStats(count) {
+    const totalTeachersElement = document.getElementById('totalTeachers');
+    if (totalTeachersElement) {
+        // Animate the count
+        animateStatCard('totalTeachers', count);
+    }
+}
+
+function viewTeacher(teacherId) {
+    showNotification(`View teacher ${teacherId} - Feature coming soon!`, 'info');
+}
+
+function editTeacher(teacherId) {
+    showNotification(`Edit teacher ${teacherId} - Feature coming soon!`, 'info');
+}
+
+async function deleteTeacher(teacherId) {
+    if (confirm(`Are you sure you want to delete teacher ${teacherId}?`)) {
+        try {
+            // Get token from currentUser in localStorage
+            const currentUser = getCurrentUser();
+            if (!currentUser || !currentUser.token) {
+                showNotification('Authentication error. Please log in again.', 'error');
+                return;
+            }
+            const token = currentUser.token;
+            
+            // Show loading notification
+            showNotification(`Deleting teacher ${teacherId}...`, 'info');
+            
+            // Make API request to delete teacher
+            const response = await fetch(`${window.attendanceAPI.baseURL}/teachers/${teacherId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                try {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Failed to delete teacher: ${response.status}`);
+                } catch (e) {
+                    throw new Error(`Failed to delete teacher: ${response.status} ${response.statusText}`);
+                }
+            }
+            
+            // Show success notification
+            showNotification(`Teacher ${teacherId} deleted successfully`, 'success');
+            
+            // Reload teacher data to reflect the change
+            loadTeacherData();
+            
+        } catch (error) {
+            console.error('Error deleting teacher:', error);
+            showNotification(`Error deleting teacher: ${error.message}`, 'error');
+        }
+    }
+}
+
+function prepareAddTeacherForm() {
+    // Clear the form
+    document.getElementById('addTeacherForm').reset();
+    
+    // Generate a unique teacher ID suggestion
+    const randomId = Math.floor(1000 + Math.random() * 9000);
+    document.getElementById('teacherId').value = `T${randomId}`;
+    
+    // Generate a username suggestion from the ID
+    document.getElementById('teacherUsername').value = `teacher${randomId}`;
+    
+    // Clear any previous photo previews
+    for (let i = 1; i <= 5; i++) {
+        const previewElement = document.getElementById(`teacherPhotoPreview${i}`);
+        if (previewElement) {
+            previewElement.innerHTML = '';
+            previewElement.style.backgroundImage = '';
+        }
+    }
+    
+    // Setup form submission
+    setupAddTeacherForm();
+}
+
+// Function to preview teacher photos when selected
+function previewTeacherPhoto(input, photoIndex) {
+    const previewElement = document.getElementById(`teacherPhotoPreview${photoIndex}`);
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            // Create image element
+            previewElement.innerHTML = `
+                <img src="${e.target.result}" alt="Teacher Photo ${photoIndex}">
+                <div class="remove-photo" onclick="removeTeacherPhoto(${photoIndex})">
+                    <i class="fas fa-times"></i>
+                </div>
+            `;
+        }
+        
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Function to remove a selected teacher photo
+function removeTeacherPhoto(photoIndex) {
+    const inputElement = document.getElementById(`teacherPhoto${photoIndex}`);
+    const previewElement = document.getElementById(`teacherPhotoPreview${photoIndex}`);
+    
+    // Clear the file input
+    inputElement.value = '';
+    
+    // Clear the preview
+    previewElement.innerHTML = '';
+}
+
+function setupAddTeacherForm() {
+    const form = document.getElementById('addTeacherForm');
+    
+    // Remove any existing event listeners
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    
+    // Add new event listener
+    newForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        // Disable submit button and show loading state
+        const submitBtn = newForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+        
+        try {
+            await addNewTeacher(newForm);
+            showSection('teachers'); // Go back to teachers section
+            showNotification('Teacher added successfully', 'success');
+            
+            // Reload teacher data
+            loadTeacherData();
+        } catch (error) {
+            console.error('Error adding teacher:', error);
+            showNotification('Error adding teacher: ' + error.message, 'error');
+        } finally {
+            // Restore button state
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    });
+}
+
+async function addNewTeacher(form) {
+    // Get teacher data
+    const teacherName = form.teacherName.value.trim();
+    const teacherId = form.teacherId.value.trim();
+    
+    // Check for teacher photos
+    let hasPhotos = false;
+    for (let i = 1; i <= 5; i++) {
+        const photoInput = document.getElementById(`teacherPhoto${i}`);
+        if (photoInput.files && photoInput.files[0]) {
+            hasPhotos = true;
+            break;
+        }
+    }
+    
+    // Create a FormData object to handle file uploads
+    const formData = new FormData();
+    
+    // Add teacher details to FormData
+    formData.append('id', teacherId);
+    formData.append('name', teacherName);
+    formData.append('department', form.teacherDept.value.trim());
+    formData.append('subject', form.teacherSubject.value.trim());
+    formData.append('status', form.teacherStatus.value);
+    formData.append('email', form.teacherEmail.value.trim());
+    formData.append('phone', form.teacherPhone.value.trim());
+    formData.append('username', form.teacherUsername.value.trim());
+    formData.append('password', form.teacherPassword.value.trim());
+    
+    // Add photos to FormData if available
+    for (let i = 1; i <= 5; i++) {
+        const photoInput = document.getElementById(`teacherPhoto${i}`);
+        if (photoInput.files && photoInput.files[0]) {
+            formData.append('photos', photoInput.files[0]);
+        }
+    }
+    
+    // Get current user's token
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const token = currentUser.token;
+    
+    // Add institution ID if available
+    if (currentUser.institution_id) {
+        formData.append('institution_id', currentUser.institution_id);
+    }
+    
+    if (!token) {
+        throw new Error('You must be logged in to add teachers');
+    }
+    
+    // First attempt to create the teacher with basic info
+    let response;
+    
+    if (hasPhotos) {
+        // Send API request with photos
+        response = await fetch(`${window.attendanceAPI.baseURL}/teachers`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+                // Don't set Content-Type when sending FormData with files
+            },
+            body: formData
+        });
+    } else {
+        // If no photos, use the regular endpoint with JSON
+        const teacherData = {
+            id: teacherId,
+            name: teacherName,
+            department: form.teacherDept.value.trim(),
+            subject: form.teacherSubject.value.trim(),
+            status: form.teacherStatus.value,
+            email: form.teacherEmail.value.trim(),
+            phone: form.teacherPhone.value.trim(),
+            username: form.teacherUsername.value.trim(),
+            password: form.teacherPassword.value.trim()
+        };
+        
+        response = await fetch(`${window.attendanceAPI.baseURL}/teachers`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(teacherData)
+        });
+    }
+    
+    if (!response.ok) {
+        try {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to add teacher');
+        } catch (e) {
+            // If response is not valid JSON
+            throw new Error(`Failed to add teacher: ${response.status} ${response.statusText}`);
+        }
+    }
+    
+    try {
+        return await response.json();
+    } catch (e) {
+        throw new Error('Invalid response from server');
+    }
 }
 
 // ===== NOTIFICATION SYSTEM =====

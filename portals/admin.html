@@ -581,14 +581,171 @@
         <section id="teachers" class="content-section">
             <div class="section-header">
                 <h1>Teacher Management</h1>
-                <button class="btn-primary">
+                <button class="btn-primary" onclick="showSection('add-teacher')">
                     <i class="fas fa-plus"></i> Add Teacher
                 </button>
             </div>
-            <div class="placeholder-content">
-                <i class="fas fa-chalkboard-teacher"></i>
-                <h3>Teacher Management</h3>
-                <p>Manage teaching staff, schedules, and assignments</p>
+            
+            <div class="data-table-container">
+                <div class="table-filters">
+                    <input type="text" placeholder="Search teachers..." class="search-input">
+                    <select class="filter-select">
+                        <option value="">All Departments</option>
+                        <option value="Science">Science</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="English">English</option>
+                    </select>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teachersTableBody">
+                        <!-- Teacher rows will be populated dynamically -->
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 20px;">Loading teachers...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Add Teacher Section -->
+        <section id="add-teacher" class="content-section">
+            <div class="section-header">
+                <h1>Add New Teacher</h1>
+                <button class="btn-secondary" onclick="showSection('teachers')">
+                    <i class="fas fa-arrow-left"></i> Back to Teachers
+                </button>
+            </div>
+            
+            <div class="form-container">
+                <form id="addTeacherForm">
+                    <div class="form-card">
+                        <h2>Teacher Information</h2>
+                        <div class="form-group">
+                            <label for="teacherName">Full Name</label>
+                            <input type="text" id="teacherName" name="teacherName" required>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="teacherId">Teacher ID</label>
+                                <input type="text" id="teacherId" name="teacherId" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="teacherDept">Department</label>
+                                <input type="text" id="teacherDept" name="teacherDept" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="teacherSubject">Subject</label>
+                                <input type="text" id="teacherSubject" name="teacherSubject" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="teacherStatus">Status</label>
+                                <select id="teacherStatus" name="teacherStatus">
+                                    <option value="active" selected>Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="teacherEmail">Email</label>
+                                <input type="email" id="teacherEmail" name="teacherEmail">
+                            </div>
+                            <div class="form-group">
+                                <label for="teacherPhone">Phone</label>
+                                <input type="tel" id="teacherPhone" name="teacherPhone">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-card">
+                        <h2>Teacher Photos</h2>
+                        <p class="form-info">Please upload up to 5 photos of the teacher. These will be used for identification and records.</p>
+                        
+                        <div class="photo-upload-grid" id="teacherPhotoUploadGrid">
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="teacherPhotoPreview1"></div>
+                                <label for="teacherPhoto1" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 1</span>
+                                </label>
+                                <input type="file" id="teacherPhoto1" name="teacherPhotos" accept="image/*" style="display: none;" onchange="previewTeacherPhoto(this, 1)">
+                            </div>
+                            
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="teacherPhotoPreview2"></div>
+                                <label for="teacherPhoto2" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 2</span>
+                                </label>
+                                <input type="file" id="teacherPhoto2" name="teacherPhotos" accept="image/*" style="display: none;" onchange="previewTeacherPhoto(this, 2)">
+                            </div>
+                            
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="teacherPhotoPreview3"></div>
+                                <label for="teacherPhoto3" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 3</span>
+                                </label>
+                                <input type="file" id="teacherPhoto3" name="teacherPhotos" accept="image/*" style="display: none;" onchange="previewTeacherPhoto(this, 3)">
+                            </div>
+                            
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="teacherPhotoPreview4"></div>
+                                <label for="teacherPhoto4" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 4</span>
+                                </label>
+                                <input type="file" id="teacherPhoto4" name="teacherPhotos" accept="image/*" style="display: none;" onchange="previewTeacherPhoto(this, 4)">
+                            </div>
+                            
+                            <div class="photo-upload-item">
+                                <div class="photo-preview" id="teacherPhotoPreview5"></div>
+                                <label for="teacherPhoto5" class="photo-upload-btn">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Photo 5</span>
+                                </label>
+                                <input type="file" id="teacherPhoto5" name="teacherPhotos" accept="image/*" style="display: none;" onchange="previewTeacherPhoto(this, 5)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-card">
+                        <h2>Login Credentials</h2>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="teacherUsername">Username</label>
+                                <input type="text" id="teacherUsername" name="teacherUsername" required>
+                                <small>Username for teacher login</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="teacherPassword">Password</label>
+                                <input type="password" id="teacherPassword" name="teacherPassword" required>
+                                <small>Password for teacher login</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="showSection('teachers')">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Teacher</button>
+                    </div>
+                </form>
             </div>
         </section>
 

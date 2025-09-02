@@ -1955,6 +1955,188 @@ app.get('/api/teachers', authenticateToken, (req, res) => {
     });
 });
 
+// Create a new teacher
+app.post('/api/teachers', authenticateToken, (req, res) => {
+    // Only admin users can add teachers
+    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+        return res.status(403).json({ error: 'Insufficient permissions to add teachers' });
+    }
+    
+    // Configure photo upload with authenticated user context
+    const photoUpload = configurePhotoUpload(req);
+    
+    // Handle the file upload
+    photoUpload.array('photos', 5)(req, res, (err) => {
+        if (err) {
+            console.error('Error uploading photos:', err);
+            return res.status(400).json({ error: 'Photo upload error: ' + err.message });
+        }
+        
+        // Continue with teacher creation
+        const { id, name, department, subject, status, email, phone, username, password } = req.body;
+        
+        // Validate required fields
+        if (!id || !name || !department || !username || !password) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+        
+        // Handle photo upload info
+        let photoDirectory = null;
+        if (req.files && req.files.length > 0) {
+            if (req.files[0].destination) {
+                const relativePath = path.relative(
+                    path.join(__dirname, '..'), 
+                    req.files[0].destination
+                ).replace(/\\/g, '/');
+                
+                photoDirectory = relativePath;
+                console.log('Photo directory saved as:', photoDirectory);
+            }
+        }
+    
+        // Check if teacher ID already exists
+        db.get('SELECT id FROM teachers WHERE id = ?', [id], (err, row) => {
+            if (err) {
+                console.error('Error checking teacher ID:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+            
+            if (row) {
+                return res.status(400).json({ error: 'Teacher ID already exists' });
+            }
+            
+            // Check if username already exists
+            db.get('SELECT username FROM users WHERE username = ?', [username], (err, userRow) => {
+                if (err) {
+                    console.error('Error checking username:', err);
+                    return res.status(500).json({ error: 'Database error' });
+                }
+                
+                if (userRow) {
+                    return res.status(400).json({ error: 'Username already exists' });
+                }
+                
+                // Start a transaction
+                db.serialize(() => {
+                    db.run('BEGIN TRANSACTION');
+                    
+                    // Hash the password
+                    const salt = bcrypt.genSaltSync(10);
+                    const hashedPassword = bcrypt.hashSync(password, salt);
+                    
+                    // Create teacher record
+                    db.run(
+                        'INSERT INTO teachers (id, name, department, subject, status, email, phone, institution_id, photo_directory, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))',
+                        [id, name, department, subject || null, status || 'active', email || null, phone || null, req.user.institution_id, photoDirectory],
+                        function(err) {
+                            if (err) {
+                                console.error('Error creating teacher:', err);
+                                db.run('ROLLBACK');
+                                return res.status(500).json({ error: 'Error creating teacher: ' + err.message });
+                            }
+                            
+                            // Create user account for the teacher
+                            db.run(
+                                'INSERT INTO users (username, password, role, name, email, institution_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))',
+                                [username, hashedPassword, 'teacher', name, email || null, req.user.institution_id],
+                                function(err) {
+                                    if (err) {
+                                        console.error('Error creating user account:', err);
+                                        db.run('ROLLBACK');
+                                        return res.status(500).json({ error: 'Error creating user account: ' + err.message });
+                                    }
+                                    
+                                    db.run('COMMIT', err => {
+                                        if (err) {
+                                            console.error('Error committing transaction:', err);
+                                            return res.status(500).json({ error: 'Transaction error' });
+                                        }
+                                        
+                                        console.log(`Teacher ${name} created with ID ${id} and username ${username}`);
+                                        res.status(201).json({ 
+                                            success: true, 
+                                            data: { 
+                                                id, 
+                                                name, 
+                                                department, 
+                                                subject, 
+                                                status, 
+                                                username,
+                                                institution_id: req.user.institution_id,
+                                                photo_directory: photoDirectory
+                                            } 
+                                        });
+                                    });
+                                }
+                            );
+                        }
+                    );
+                });
+            });
+        });
+    });
+});
+
+// Delete a teacher
+app.delete('/api/teachers/:id', authenticateToken, (req, res) => {
+    // Only admin users can delete teachers
+    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+        return res.status(403).json({ error: 'Insufficient permissions to delete teachers' });
+    }
+    
+    const teacherId = req.params.id;
+    
+    // Get teacher information first
+    db.get('SELECT * FROM teachers WHERE id = ?', [teacherId], (err, teacher) => {
+        if (err) {
+            console.error('Error fetching teacher:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        if (!teacher) {
+            return res.status(404).json({ error: 'Teacher not found' });
+        }
+        
+        // Check if the teacher belongs to the admin's institution
+        if (req.user.role === 'admin' && teacher.institution_id !== req.user.institution_id) {
+            return res.status(403).json({ error: 'You can only delete teachers from your institution' });
+        }
+        
+        // Start a transaction
+        db.serialize(() => {
+            db.run('BEGIN TRANSACTION');
+            
+            // Delete teacher record
+            db.run('DELETE FROM teachers WHERE id = ?', [teacherId], function(err) {
+                if (err) {
+                    console.error('Error deleting teacher:', err);
+                    db.run('ROLLBACK');
+                    return res.status(500).json({ error: 'Error deleting teacher' });
+                }
+                
+                // Delete associated user account
+                db.run('DELETE FROM users WHERE username = ? AND role = "teacher"', [teacher.id], function(err) {
+                    if (err) {
+                        console.error('Error deleting user account:', err);
+                        db.run('ROLLBACK');
+                        return res.status(500).json({ error: 'Error deleting user account' });
+                    }
+                    
+                    db.run('COMMIT', err => {
+                        if (err) {
+                            console.error('Error committing transaction:', err);
+                            return res.status(500).json({ error: 'Transaction error' });
+                        }
+                        
+                        console.log(`Teacher ${teacherId} deleted successfully`);
+                        res.json({ success: true, message: 'Teacher deleted successfully' });
+                    });
+                });
+            });
+        });
+    });
+});
+
 // Get all classes, optionally filtered by institution
 app.get('/api/classes', authenticateToken, (req, res) => {
     const { department, status = 'active' } = req.query;
