@@ -648,18 +648,14 @@ function authenticateToken(req, res, next) {
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-        // For development/demo purposes, allow requests without token
-        console.log('Warning: Request without token - proceeding for development purposes');
-        req.user = { id: 0, role: 'demo', name: 'Demo User', institution_id: 4 }; // Use Dhaka College for testing
-        return next();
+        console.log('Request without token - authentication required');
+        return res.status(401).json({ error: 'Authentication token required' });
     }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
             console.error('Token verification failed:', err.message);
-            // For development, we'll proceed anyway but with limited permissions
-            req.user = { id: 0, role: 'demo', name: 'Demo User', institution_id: 4 }; // Use Dhaka College for testing
-            return next();
+            return res.status(401).json({ error: 'Invalid or expired token' });
         }
         
         req.user = user;
