@@ -237,11 +237,25 @@ function openInstitutionForm() {
     document.getElementById('institution-list-view').style.display = 'none';
     document.getElementById('institution-form-view').style.display = 'block';
     
-    // Reset the form
-    document.getElementById('institution-form').reset();
+    // Reset form for new institution
+    const form = document.getElementById('institution-form');
+    form.reset();
+    form.dataset.editing = 'false';
+    delete form.dataset.institutionId;
     
-    // Set the title
+    // Reset form title and button text
     document.getElementById('institution-form-title').textContent = 'Add New Institution';
+    document.querySelector('#save-institution').innerHTML = '<i class="fas fa-save"></i> Save Institution';
+    
+    // Hide institution code display
+    const codeDisplay = document.getElementById('institution-code-display');
+    if (codeDisplay) {
+        codeDisplay.style.display = 'none';
+    }
+    
+    // Make admin credentials required for new institutions
+    document.getElementById('admin-username').setAttribute('required', 'required');
+    document.getElementById('admin-password').setAttribute('required', 'required');
     
     // Scroll to top
     window.scrollTo(0, 0);
@@ -264,6 +278,10 @@ function closeInstitutionForm() {
 
 function handleInstitutionSubmit(event) {
     event.preventDefault();
+    
+    // Check if we're editing or creating
+    const isEditing = document.getElementById('institution-form').dataset.editing === 'true';
+    const institutionId = document.getElementById('institution-form').dataset.institutionId;
     
     // Get selected institution type
     const selectedType = document.getElementById('institution-type').value;
@@ -295,27 +313,37 @@ function handleInstitutionSubmit(event) {
         adminEmail: document.getElementById('institution-admin').value,
         adminUsername: document.getElementById('admin-username').value,
         adminPassword: document.getElementById('admin-password').value,
-        adminName: 'Administrator' // Set a default admin name or add a field for it
+        adminName: 'Administrator'
     };
     
     // Show loading indicator
     const submitBtn = document.querySelector('#institution-form button[type="submit"]');
     const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+    if (isEditing) {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    } else {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+    }
     submitBtn.disabled = true;
     
-    // Create institution via API
-    createInstitutionViaAPI(institutionData)
+    // Create or update institution via API
+    const apiCall = isEditing ? 
+        updateInstitutionViaAPI(institutionId, institutionData) : 
+        createInstitutionViaAPI(institutionData);
+    
+    apiCall
         .then(() => {
             // Close form
             closeInstitutionForm();
             
             // Show success message
-            showNotification('Institution added successfully!', 'success');
+            const message = isEditing ? 'Institution updated successfully!' : 'Institution added successfully!';
+            showNotification(message, 'success');
         })
         .catch(error => {
-            console.error('Failed to create institution:', error);
-            showNotification('Failed to create institution. Please try again.', 'error');
+            console.error('Failed to save institution:', error);
+            const message = isEditing ? 'Failed to update institution. Please try again.' : 'Failed to create institution. Please try again.';
+            showNotification(message, 'error');
         })
         .finally(() => {
             // Restore button state
@@ -439,10 +467,7 @@ async function loadInstitutions() {
         // Get base URL
         const baseURL = getAPIBaseURL();
         
-        // Get the auth token from the current super admin session
-        const token = localStorage.getItem('superAdminToken');
-        
-        // Make API call to fetch institutions - no token required for development
+        // Make API call to fetch institutions
         const response = await fetch(`${baseURL}/institutions`, {
             method: 'GET',
             headers: {
@@ -455,15 +480,8 @@ async function loadInstitutions() {
         }
         
         const result = await response.json();
-        console.log('Raw institutions data from API:', result);
+        console.log('Institutions loaded from API:', result);
         const institutions = result.data || [];
-        
-        // Debug the first institution to see its structure
-        if (institutions.length > 0) {
-            console.log('First institution data:', institutions[0]);
-            console.log('First institution address type:', typeof institutions[0].address);
-            console.log('First institution address:', institutions[0].address);
-        }
         
         // Clear previous content including the loading indicator
         institutionCards.innerHTML = '';
@@ -485,20 +503,20 @@ async function loadInstitutions() {
                 institutionCards.appendChild(card);
             });
         }
+        
+        // Update dashboard stats after loading institutions
+        updateDashboardStats();
+        
     } catch (error) {
         console.error('Error loading institutions:', error);
         institutionCards.innerHTML = '<div class="error-message">Failed to load institutions. Please try again.</div>';
         
-        // If API fails, try to get from localStorage as fallback (for demo purposes)
-        try {
-            let institutions = JSON.parse(localStorage.getItem('institutions') || '[]');
-            
-            if(institutions.length > 0) {
-                institutionCards.innerHTML += '<div class="fallback-notice">Showing cached institutions:</div>';
-                institutions.forEach(institution => {
-                    const card = createInstitutionCard(institution);
-                    institutionCards.appendChild(card);
-                });
+        // Show retry button
+        const retryBtn = document.createElement('button');
+        retryBtn.textContent = 'Retry';
+        retryBtn.className = 'btn-secondary';
+        retryBtn.onclick = loadInstitutions;
+        institutionCards.appendChild(retryBtn);
             }
         } catch (e) {
             console.error('Error loading fallback institutions:', e);
@@ -538,6 +556,7 @@ function createInstitutionCard(institution) {
             ${institution.phone ? `<p><i class="fas fa-phone"></i> ${institution.phone}</p>` : ''}
             ${institution.address ? `<p><i class="fas fa-map-marker-alt"></i> ${formatAddress(institution.address)}</p>` : ''}
             ${institution.adminCredentials?.username ? `<p><i class="fas fa-user-shield"></i> Admin: ${institution.adminCredentials.username}</p>` : ''}
+            ${institution.institution_code ? `<p><i class="fas fa-code"></i> Code: ${institution.institution_code}</p>` : ''}
         </div>
         <div class="institution-actions">
             <button class="edit-btn" data-id="${institution.id}"><i class="fas fa-edit"></i></button>
@@ -552,12 +571,23 @@ function createInstitutionCard(institution) {
     return card;
 }
 
-function editInstitution(id) {
-    // Get institutions
-    let institutions = JSON.parse(localStorage.getItem('institutions') || '[]');
-    const institution = institutions.find(inst => inst.id === id);
-    
-    if(!institution) return;
+async function editInstitution(id) {
+    try {
+        // Fetch institution data from API
+        const baseURL = getAPIBaseURL();
+        const response = await fetch(`${baseURL}/institutions/${id}`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch institution data');
+        }
+        
+        const result = await response.json();
+        const institution = result.data;
+        
+        if (!institution) {
+            showNotification('Institution not found', 'error');
+            return;
+        }
     
     // Populate the form
     document.getElementById('institution-name').value = institution.name;
@@ -609,6 +639,39 @@ function editInstitution(id) {
     document.getElementById('institution-website').value = institution.website || '';
     document.getElementById('institution-phone').value = institution.phone || '';
     document.getElementById('institution-admin').value = institution.adminEmail;
+    
+    // Set admin credentials - make these optional for editing
+    document.getElementById('admin-username').value = institution.adminCredentials?.username || '';
+    document.getElementById('admin-password').value = ''; // Don't populate password for security
+    
+    // Show institution code if available
+    const codeDisplay = document.getElementById('institution-code-display');
+    const codeValue = document.getElementById('display-institution-code');
+    if (institution.institution_code && codeDisplay && codeValue) {
+        codeValue.textContent = institution.institution_code;
+        codeDisplay.style.display = 'block';
+    }
+    
+    // Set form to edit mode
+    const form = document.getElementById('institution-form');
+    form.dataset.editing = 'true';
+    form.dataset.institutionId = id;
+    
+    // Update form title and button text
+    document.getElementById('institution-form-title').textContent = 'Edit Institution';
+    document.querySelector('#save-institution').innerHTML = '<i class="fas fa-save"></i> Update Institution';
+    
+    // Make admin credentials optional for editing
+    document.getElementById('admin-username').removeAttribute('required');
+    document.getElementById('admin-password').removeAttribute('required');
+    
+    // Open the form
+    openInstitutionForm();
+    
+    } catch (error) {
+        console.error('Error loading institution for editing:', error);
+        showNotification('Failed to load institution data', 'error');
+    }
     
     // Handle admin credentials
     if (institution.adminCredentials) {
@@ -681,6 +744,38 @@ function editInstitution(id) {
 }
 
 async function deleteInstitution(id) {
+    if (!confirm('Are you sure you want to delete this institution? This action cannot be undone and will remove all associated data.')) {
+        return;
+    }
+    
+    try {
+        const baseURL = getAPIBaseURL();
+        const response = await fetch(`${baseURL}/institutions/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to delete institution');
+        }
+        
+        // Show success message
+        showNotification('Institution deleted successfully', 'success');
+        
+        // Refresh the institution list and update dashboard
+        loadInstitutions();
+        updateDashboardStats();
+        
+    } catch (error) {
+        console.error('Error deleting institution:', error);
+        showNotification('Failed to delete institution. Please try again.', 'error');
+    }
+}
+
+async function deleteInstitution(id) {
     if(!confirm('Are you sure you want to delete this institution? This action cannot be undone.')) return;
     
     try {
@@ -750,80 +845,42 @@ function showNotification(message, type = 'info') {
 }
 
 // ===== DASHBOARD FUNCTIONS =====
-function updateDashboardStats() {
-    // Get institutions from localStorage
-    const institutions = JSON.parse(localStorage.getItem('institutions') || '[]');
-    
-    // Calculate teachers and students based on institution data
-    let totalTeachers = 0;
-    let totalStudents = 0;
-    
-    // For each institution, we'll calculate approximate numbers based on institution type
-    institutions.forEach(institution => {
-        const type = institution.type || '';
+async function updateDashboardStats() {
+    try {
+        const baseURL = getAPIBaseURL();
+        const response = await fetch(`${baseURL}/superadmin/stats`);
         
-        // Estimate teacher and student counts based on institution type
-        switch(type) {
-            case 'university':
-                totalTeachers += Math.floor(Math.random() * 30) + 50; // 50-80 teachers per university
-                totalStudents += Math.floor(Math.random() * 1000) + 2000; // 2000-3000 students per university
-                break;
-            case 'college_of_education':
-            case 'polytechnic':
-                totalTeachers += Math.floor(Math.random() * 20) + 30; // 30-50 teachers per college
-                totalStudents += Math.floor(Math.random() * 500) + 500; // 500-1000 students per college
-                break;
-            case 'senior_secondary':
-                totalTeachers += Math.floor(Math.random() * 10) + 15; // 15-25 teachers per senior secondary
-                totalStudents += Math.floor(Math.random() * 200) + 300; // 300-500 students per senior secondary
-                break;
-            case 'junior_secondary':
-                totalTeachers += Math.floor(Math.random() * 5) + 10; // 10-15 teachers per junior secondary
-                totalStudents += Math.floor(Math.random() * 150) + 200; // 200-350 students per junior secondary
-                break;
-            case 'primary_school':
-                totalTeachers += Math.floor(Math.random() * 5) + 5; // 5-10 teachers per primary school
-                totalStudents += Math.floor(Math.random() * 100) + 100; // 100-200 students per primary school
-                break;
-            case 'nursery':
-                totalTeachers += Math.floor(Math.random() * 3) + 3; // 3-6 teachers per nursery
-                totalStudents += Math.floor(Math.random() * 50) + 20; // 20-70 students per nursery
-                break;
-            case 'technical_college':
-            case 'vocational_center':
-                totalTeachers += Math.floor(Math.random() * 10) + 8; // 8-18 teachers per technical/vocational
-                totalStudents += Math.floor(Math.random() * 200) + 100; // 100-300 students per technical/vocational
-                break;
-            default:
-                // For any other or unspecified institution type
-                totalTeachers += Math.floor(Math.random() * 5) + 5; // 5-10 teachers
-                totalStudents += Math.floor(Math.random() * 100) + 50; // 50-150 students
+        if (!response.ok) {
+            throw new Error('Failed to fetch superadmin statistics');
         }
-    });
-    
-    // Get admin accounts
-    // Each institution has at least 1 admin plus the superadmin
-    const systemAdmins = institutions.length + 1;
-    
-    // Compile statistics
-    const stats = {
-        totalInstitutions: institutions.length,
-        totalTeachers: totalTeachers || 0,
-        totalStudents: totalStudents || 0,
-        systemAdmins: systemAdmins || 1
-    };
-    
-    // Update the dashboard statistics with calculated data
-    document.querySelector('.stat-card:nth-child(1) .stat-number').textContent = stats.totalInstitutions;
-    document.querySelector('.stat-card:nth-child(2) .stat-number').textContent = stats.totalTeachers;
-    document.querySelector('.stat-card:nth-child(3) .stat-number').textContent = stats.totalStudents;
-    document.querySelector('.stat-card:nth-child(4) .stat-number').textContent = stats.systemAdmins;
-    
-    // Add animation effect to the numbers
-    document.querySelectorAll('.stat-number').forEach(el => {
-        el.classList.add('animate-pulse');
-        setTimeout(() => {
-            el.classList.remove('animate-pulse');
-        }, 1000);
-    });
+        
+        const result = await response.json();
+        const stats = result.data;
+        
+        // Update the dashboard statistics with real data
+        document.querySelector('.stat-card:nth-child(1) .stat-number').textContent = stats.totalInstitutions || 0;
+        document.querySelector('.stat-card:nth-child(2) .stat-number').textContent = stats.totalTeachers || 0;
+        document.querySelector('.stat-card:nth-child(3) .stat-number').textContent = stats.totalStudents || 0;
+        document.querySelector('.stat-card:nth-child(4) .stat-number').textContent = stats.systemAdmins || 0;
+        
+        // Add animation effect to the numbers
+        document.querySelectorAll('.stat-number').forEach(el => {
+            el.classList.add('animate-pulse');
+            setTimeout(() => {
+                el.classList.remove('animate-pulse');
+            }, 1000);
+        });
+        
+        console.log('Dashboard stats updated:', stats);
+        
+    } catch (error) {
+        console.error('Error updating dashboard stats:', error);
+        
+        // Fallback to localStorage data
+        const institutions = JSON.parse(localStorage.getItem('institutions') || '[]');
+        document.querySelector('.stat-card:nth-child(1) .stat-number').textContent = institutions.length;
+        document.querySelector('.stat-card:nth-child(2) .stat-number').textContent = '0';
+        document.querySelector('.stat-card:nth-child(3) .stat-number').textContent = '0';
+        document.querySelector('.stat-card:nth-child(4) .stat-number').textContent = '1';
+    }
 }

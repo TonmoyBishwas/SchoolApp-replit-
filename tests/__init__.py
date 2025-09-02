@@ -1,0 +1,1 @@
+# Tests package for multi-institution school management system

@@ -234,6 +234,13 @@
                     <form id="institution-form" class="institution-form">
                         <div class="form-card">
                             <h2>Basic Information</h2>
+                            <div class="form-group" id="institution-code-display" style="display: none;">
+                                <label>Institution Code</label>
+                                <div class="code-display">
+                                    <span id="display-institution-code"></span>
+                                    <small>This code is used for generating unique usernames</small>
+                                </div>
+                            </div>
                             <div class="form-group">
                                 <label for="institution-name">Institution Name*</label>
                                 <input type="text" id="institution-name" name="name" required>
@@ -914,6 +921,24 @@
         
         .toggle-password:hover {
             color: #333;
+        }
+        
+        /* Institution code display */
+        .code-display {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 10px 12px;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #495057;
+            letter-spacing: 1px;
+        }
+        
+        .code-display small {
+            font-family: inherit;
+            letter-spacing: 0;
+            font-weight: normal;
         }
     </style>
 </body>

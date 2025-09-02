@@ -1,5 +1,8 @@
 // ===== CHEICK MOHAMED SCHOOL BACKEND SERVER =====
 
+// Load environment variables
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -9,6 +12,7 @@ const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const sqlite3 = require('sqlite3').verbose();
+const googleDrive = require('./services/googleDrive');
 
 // ===== SERVER CONFIGURATION =====
 const app = express();
@@ -20,7 +24,30 @@ const isReplit = process.env.REPL_ID !== undefined;
 const DB_PATH = isReplit ? './database/school.db' : './database/school.db';
 
 // ===== MIDDLEWARE =====
-app.use(cors());
+// Configure CORS for development and production
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'https://school-app.replit.com',
+            'https://school-app.replit.dev',
+            'https://school-app.e1ectr0n.repl.co'
+        ];
+        
+        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '..')));
@@ -142,6 +169,7 @@ function createTables() {
                 website TEXT,
                 phone TEXT,
                 folder_name TEXT,
+                institution_code TEXT UNIQUE,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
@@ -153,11 +181,20 @@ function createTables() {
             db.all("PRAGMA table_info(institutions)", (err, rows) => {
                 if (err) console.error('Error checking institutions table schema:', err);
                 
-                const hasColumn = rows && Array.isArray(rows) && rows.some(row => row.name === 'folder_name');
-                if (!hasColumn) {
+                const hasFolderName = rows && Array.isArray(rows) && rows.some(row => row.name === 'folder_name');
+                const hasInstitutionCode = rows && Array.isArray(rows) && rows.some(row => row.name === 'institution_code');
+                
+                if (!hasFolderName) {
                     db.run('ALTER TABLE institutions ADD COLUMN folder_name TEXT', (err) => {
                         if (err) console.error('Error adding folder_name to institutions table:', err);
                         else console.log('Adding folder_name column to institutions table');
+                    });
+                }
+                
+                if (!hasInstitutionCode) {
+                    db.run('ALTER TABLE institutions ADD COLUMN institution_code TEXT UNIQUE', (err) => {
+                        if (err) console.error('Error adding institution_code to institutions table:', err);
+                        else console.log('Adding institution_code column to institutions table');
                     });
                 }
             });
@@ -401,6 +438,169 @@ function createTables() {
             }
         });
 
+        // Enhanced Grade Management - Add grade level, section, and academic year columns
+        db.all("PRAGMA table_info(classes)", (err, rows) => {
+            if (err) {
+                console.error('Error checking classes table for grade enhancements:', err);
+                return;
+            }
+            
+            const existingColumns = rows.map(row => row.name);
+            const newColumns = [
+                { name: 'grade_level', sql: 'ALTER TABLE classes ADD COLUMN grade_level INTEGER' },
+                { name: 'section', sql: 'ALTER TABLE classes ADD COLUMN section TEXT' },
+                { name: 'academic_year', sql: 'ALTER TABLE classes ADD COLUMN academic_year TEXT' },
+                { name: 'grade_category', sql: 'ALTER TABLE classes ADD COLUMN grade_category TEXT' }
+            ];
+            
+            newColumns.forEach(column => {
+                if (!existingColumns.includes(column.name)) {
+                    console.log(`Adding ${column.name} column to classes table`);
+                    db.run(column.sql, err => {
+                        if (err) console.error(`Error adding ${column.name} to classes table:`, err);
+                        else console.log(`${column.name} column added to classes table`);
+                    });
+                }
+            });
+        });
+
+        // Parents table
+        db.run(`
+            CREATE TABLE IF NOT EXISTS parents (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT,
+                phone TEXT,
+                address TEXT,
+                student_ids TEXT,
+                institution_id INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (institution_id) REFERENCES institutions(id)
+            )
+        `, (err) => {
+            if (err) console.error('Error creating parents table:', err);
+            else console.log('Parents table created/verified');
+        });
+        
+        // Check and add institution_id column to parents table if it doesn't exist
+        db.get("PRAGMA table_info(parents)", (err, rows) => {
+            if (err) {
+                console.error('Error checking parents table schema:', err);
+                return;
+            }
+            
+            // Check if institution_id column exists
+            let hasInstitutionId = false;
+            if (Array.isArray(rows)) {
+                hasInstitutionId = rows.some(row => row.name === 'institution_id');
+            } else {
+                hasInstitutionId = rows && rows.name === 'institution_id';
+            }
+            
+            if (!hasInstitutionId) {
+                console.log('Adding institution_id column to parents table');
+                db.run('ALTER TABLE parents ADD COLUMN institution_id INTEGER REFERENCES institutions(id)', err => {
+                    if (err) console.error('Error adding institution_id to parents table:', err);
+                    else console.log('institution_id column added to parents table');
+                });
+            }
+        });
+
+        // Calendar Events table
+        db.run(`
+            CREATE TABLE IF NOT EXISTS calendar_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                description TEXT,
+                event_type TEXT CHECK(event_type IN ('class', 'exam', 'holiday', 'meeting', 'announcement')),
+                start_date DATE NOT NULL,
+                end_date DATE,
+                start_time TIME,
+                end_time TIME,
+                class_id INTEGER,
+                institution_id INTEGER NOT NULL,
+                created_by INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (institution_id) REFERENCES institutions(id),
+                FOREIGN KEY (created_by) REFERENCES users(id),
+                FOREIGN KEY (class_id) REFERENCES classes(id)
+            )
+        `, (err) => {
+            if (err) console.error('Error creating calendar_events table:', err);
+            else console.log('Calendar Events table created/verified');
+        });
+        
+        // Check and add institution_id column to calendar_events table if it doesn't exist
+        db.get("PRAGMA table_info(calendar_events)", (err, rows) => {
+            if (err) {
+                console.error('Error checking calendar_events table schema:', err);
+                return;
+            }
+            
+            // Check if institution_id column exists
+            let hasInstitutionId = false;
+            if (Array.isArray(rows)) {
+                hasInstitutionId = rows.some(row => row.name === 'institution_id');
+            } else {
+                hasInstitutionId = rows && rows.name === 'institution_id';
+            }
+            
+            if (!hasInstitutionId) {
+                console.log('Adding institution_id column to calendar_events table');
+                db.run('ALTER TABLE calendar_events ADD COLUMN institution_id INTEGER REFERENCES institutions(id)', err => {
+                    if (err) console.error('Error adding institution_id to calendar_events table:', err);
+                    else console.log('institution_id column added to calendar_events table');
+                });
+            }
+        });
+
+        // Announcements table
+        db.run(`
+            CREATE TABLE IF NOT EXISTS announcements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                target_audience TEXT CHECK(target_audience IN ('all', 'teachers', 'students', 'parents')),
+                priority TEXT CHECK(priority IN ('low', 'medium', 'high', 'urgent')),
+                institution_id INTEGER NOT NULL,
+                created_by INTEGER NOT NULL,
+                is_published BOOLEAN DEFAULT 1,
+                published_at DATETIME,
+                expires_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (institution_id) REFERENCES institutions(id),
+                FOREIGN KEY (created_by) REFERENCES users(id)
+            )
+        `, (err) => {
+            if (err) console.error('Error creating announcements table:', err);
+            else console.log('Announcements table created/verified');
+        });
+        
+        // Check and add institution_id column to announcements table if it doesn't exist
+        db.get("PRAGMA table_info(announcements)", (err, rows) => {
+            if (err) {
+                console.error('Error checking announcements table schema:', err);
+                return;
+            }
+            
+            // Check if institution_id column exists
+            let hasInstitutionId = false;
+            if (Array.isArray(rows)) {
+                hasInstitutionId = rows.some(row => row.name === 'institution_id');
+            } else {
+                hasInstitutionId = rows && rows.name === 'institution_id';
+            }
+            
+            if (!hasInstitutionId) {
+                console.log('Adding institution_id column to announcements table');
+                db.run('ALTER TABLE announcements ADD COLUMN institution_id INTEGER REFERENCES institutions(id)', err => {
+                    if (err) console.error('Error adding institution_id to announcements table:', err);
+                    else console.log('institution_id column added to announcements table');
+                });
+            }
+        });
+
         // Initialize default data after all tables are created
         setTimeout(() => {
             insertDefaultData();
@@ -411,6 +611,7 @@ function createTables() {
 function insertDefaultData() {
     // Insert demo users
     const defaultUsers = [
+        { username: 'superadmin', password: 'superadmin123', role: 'superadmin', name: 'System Administrator' },
         { username: 'admin123', password: 'admin123', role: 'admin', name: 'Administrator' },
         { username: 'teacher001', password: 'teacher123', role: 'teacher', name: 'John Doe' },
         { username: 'student444', password: 'student123', role: 'student', name: 'Tonmoy Ahmed' },
@@ -468,6 +669,100 @@ function requireRole(role) {
     };
 }
 
+// ===== UTILITY FUNCTIONS =====
+
+// Generate unique username based on name and institution code
+function generateUniqueUsername(firstName, lastName, institutionCode, userType = 'student') {
+    // Clean names - remove special characters and spaces
+    const cleanFirst = firstName.replace(/[^a-zA-Z]/g, '').toLowerCase();
+    const cleanLast = lastName.replace(/[^a-zA-Z]/g, '').toLowerCase();
+    
+    // Create base username: first3letters + last3letters + institutioncode
+    const firstPart = cleanFirst.substring(0, 3);
+    const lastPart = cleanLast.substring(0, 3);
+    
+    // Add user type prefix for non-students
+    let prefix = '';
+    if (userType === 'teacher') prefix = 't';
+    else if (userType === 'admin') prefix = 'a';
+    else if (userType === 'parent') prefix = 'p';
+    
+    const baseUsername = prefix + firstPart + lastPart + institutionCode.toLowerCase();
+    
+    return baseUsername;
+}
+
+// Generate secure random password
+function generateSecurePassword(length = 12) {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    
+    // Ensure at least one character from each category
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz'; 
+    const numbers = '0123456789';
+    const special = '!@#$%^&*';
+    
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += special[Math.floor(Math.random() * special.length)];
+    
+    // Fill remaining length
+    for (let i = 4; i < length; i++) {
+        password += charset[Math.floor(Math.random() * charset.length)];
+    }
+    
+    // Shuffle the password
+    return password.split('').sort(() => Math.random() - 0.5).join('');
+}
+
+// Check if username exists in database
+function checkUsernameExists(username, callback) {
+    db.get('SELECT id FROM users WHERE username = ?', [username], (err, row) => {
+        if (err) {
+            callback(err, null);
+        } else {
+            callback(null, !!row);
+        }
+    });
+}
+
+// Generate unique username with collision handling
+function generateUniqueUsernameWithCheck(firstName, lastName, institutionCode, userType, callback) {
+    let baseUsername = generateUniqueUsername(firstName, lastName, institutionCode, userType);
+    let finalUsername = baseUsername;
+    let counter = 1;
+    
+    function checkAndIncrement() {
+        checkUsernameExists(finalUsername, (err, exists) => {
+            if (err) {
+                callback(err, null);
+                return;
+            }
+            
+            if (!exists) {
+                callback(null, finalUsername);
+                return;
+            }
+            
+            // Username exists, try with number suffix
+            finalUsername = baseUsername + counter;
+            counter++;
+            
+            // Prevent infinite loop
+            if (counter > 999) {
+                callback(new Error('Unable to generate unique username'), null);
+                return;
+            }
+            
+            checkAndIncrement();
+        });
+    }
+    
+    checkAndIncrement();
+}
+
 // ===== INSTITUTION ROUTES =====
 app.post('/api/institutions', (req, res) => {
     const { name, regNumber, type, address, email, website, phone, adminUsername, adminPassword, adminName, adminEmail } = req.body;
@@ -481,6 +776,11 @@ app.post('/api/institutions', (req, res) => {
 
     // Generate a safe folder name from the institution name
     const safeFolderName = name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    
+    // Generate unique institution code (first 3 letters + random number)
+    const namePrefix = name.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
+    const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const institutionCode = namePrefix + randomSuffix;
     
     // Create directory structure for the institution
     const institutionDir = path.join(__dirname, '..', 'uploads', safeFolderName);
@@ -505,11 +805,11 @@ app.post('/api/institutions', (req, res) => {
 
     // Insert new institution
     db.run(
-        `INSERT INTO institutions (name, reg_number, type, address, email, website, phone, folder_name) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO institutions (name, reg_number, type, address, email, website, phone, folder_name, institution_code) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [name, regNumber || null, type || null, 
          address ? JSON.stringify(address) : null, 
-         email || null, website || null, phone || null, safeFolderName],
+         email || null, website || null, phone || null, safeFolderName, institutionCode],
         function(err) {
             if (err) {
                 console.error('Error creating institution:', err);
@@ -620,6 +920,58 @@ app.get('/api/institutions/:id', (req, res) => {
             res.json({
                 success: true,
                 data: institution
+            });
+        }
+    );
+});
+
+// Update institution by ID
+app.put('/api/institutions/:id', (req, res) => {
+    const { id } = req.params;
+    const { name, regNumber, type, address, email, website, phone, adminEmail } = req.body;
+
+    // Validate required fields
+    if (!name || !regNumber || !type || !email || !adminEmail) {
+        return res.status(400).json({ 
+            error: 'Missing required fields: name, regNumber, type, email, adminEmail' 
+        });
+    }
+
+    // Serialize address object to JSON string
+    const addressJson = typeof address === 'object' ? JSON.stringify(address) : address;
+
+    db.run(
+        `UPDATE institutions 
+         SET name = ?, regNumber = ?, type = ?, address = ?, email = ?, website = ?, phone = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [name, regNumber, type, addressJson, email, website, phone, id],
+        function(err) {
+            if (err) {
+                console.error('Error updating institution:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+
+            if (this.changes === 0) {
+                return res.status(404).json({ error: 'Institution not found' });
+            }
+
+            // Update admin email if provided
+            if (adminEmail) {
+                db.run(
+                    `UPDATE users SET email = ? WHERE institution_id = ? AND role = 'admin'`,
+                    [adminEmail, id],
+                    (updateErr) => {
+                        if (updateErr) {
+                            console.warn('Failed to update admin email:', updateErr);
+                        }
+                    }
+                );
+            }
+
+            res.json({
+                success: true,
+                message: 'Institution updated successfully',
+                data: { id, name, regNumber, type, address, email, website, phone }
             });
         }
     );
@@ -802,10 +1154,26 @@ app.post('/api/attendance/upload', authenticateToken, csvUpload.single('csvFile'
 
 // Real-time attendance endpoint (for face recognition system)
 app.post('/api/attendance/realtime', (req, res) => {
-    const { date, time, name, id, dept, role } = req.body;
+    const { date, time, name, id, dept, role, institution_code } = req.body;
 
     if (!date || !time || !name || !id || !dept) {
         return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Resolve institution_id from institution_code
+    let institution_id = null;
+    if (institution_code) {
+        try {
+            const institution = await new Promise((resolve, reject) => {
+                db.get('SELECT id FROM institutions WHERE institution_code = ?', [institution_code], (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row);
+                });
+            });
+            institution_id = institution?.id;
+        } catch (error) {
+            console.error('Error resolving institution:', error);
+        }
     }
 
     const attendanceRecord = {
@@ -814,7 +1182,8 @@ app.post('/api/attendance/realtime', (req, res) => {
         student_name: name,
         student_id: id,
         department: dept,
-        role: role || 'Student'
+        role: role || 'Student',
+        institution_id: institution_id
     };
 
     insertAttendanceRecords([attendanceRecord])
@@ -900,6 +1269,77 @@ app.get('/api/attendance/stats', authenticateToken, (req, res) => {
         .catch(err => {
             console.error('Error getting attendance stats:', err);
             res.status(500).json({ error: 'Failed to get attendance statistics' });
+        });
+});
+
+// ===== SUPERADMIN STATS ROUTES =====
+app.get('/api/superadmin/stats', (req, res) => {
+    // Get system-wide statistics for superadmin dashboard
+    const stats = {};
+    const promises = [];
+
+    // Get total institutions
+    promises.push(new Promise((resolve, reject) => {
+        db.get('SELECT COUNT(*) as total FROM institutions', (err, row) => {
+            if (err) reject(err);
+            else {
+                stats.totalInstitutions = row.total;
+                resolve();
+            }
+        });
+    }));
+
+    // Get total students across all institutions
+    promises.push(new Promise((resolve, reject) => {
+        db.get('SELECT COUNT(*) as total FROM students WHERE status = "active"', (err, row) => {
+            if (err) reject(err);
+            else {
+                stats.totalStudents = row.total;
+                resolve();
+            }
+        });
+    }));
+
+    // Get total teachers across all institutions
+    promises.push(new Promise((resolve, reject) => {
+        db.get('SELECT COUNT(*) as total FROM users WHERE role = "teacher"', (err, row) => {
+            if (err) reject(err);
+            else {
+                stats.totalTeachers = row.total;
+                resolve();
+            }
+        });
+    }));
+
+    // Get total system admins (including superadmin)
+    promises.push(new Promise((resolve, reject) => {
+        db.get('SELECT COUNT(*) as total FROM users WHERE role IN ("admin", "superadmin")', (err, row) => {
+            if (err) reject(err);
+            else {
+                stats.systemAdmins = row.total;
+                resolve();
+            }
+        });
+    }));
+
+    // Get institution breakdown by type
+    promises.push(new Promise((resolve, reject) => {
+        db.all('SELECT type, COUNT(*) as count FROM institutions GROUP BY type', (err, rows) => {
+            if (err) reject(err);
+            else {
+                stats.institutionsByType = rows || [];
+                resolve();
+            }
+        });
+    }));
+
+    Promise.all(promises)
+        .then(() => {
+            res.json({ success: true, data: stats });
+        })
+        .catch(err => {
+            console.error('Error getting superadmin stats:', err);
+            res.status(500).json({ error: 'Failed to get system statistics' });
         });
 });
 
@@ -1539,6 +1979,680 @@ app.get('/api/classes', authenticateToken, (req, res) => {
     });
 });
 
+// Create new class with grade management
+app.post('/api/classes', authenticateToken, (req, res) => {
+    const { 
+        name, 
+        department, 
+        teacher_id, 
+        room, 
+        schedule, 
+        capacity, 
+        grade_level, 
+        section, 
+        academic_year,
+        grade_category 
+    } = req.body;
+
+    if (!name || !department) {
+        return res.status(400).json({ error: 'Class name and department are required' });
+    }
+
+    // Get institution_id from authenticated user
+    let institution_id = null;
+    if (req.user && req.user.role === 'admin' && req.user.institution_id) {
+        institution_id = req.user.institution_id;
+    }
+
+    db.run(`
+        INSERT INTO classes (
+            name, department, teacher_id, room, schedule, capacity, 
+            grade_level, section, academic_year, grade_category, institution_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+        name, department, teacher_id, room, schedule, capacity,
+        grade_level, section, academic_year, grade_category, institution_id
+    ], function(err) {
+        if (err) {
+            console.error('Error creating class:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Class created successfully',
+            data: { id: this.lastID, name, department, grade_level, section }
+        });
+    });
+});
+
+// Update class
+app.put('/api/classes/:id', authenticateToken, (req, res) => {
+    const { id } = req.params;
+    const { 
+        name, 
+        department, 
+        teacher_id, 
+        room, 
+        schedule, 
+        capacity, 
+        grade_level, 
+        section, 
+        academic_year,
+        grade_category,
+        status
+    } = req.body;
+
+    let query = `
+        UPDATE classes 
+        SET name = ?, department = ?, teacher_id = ?, room = ?, schedule = ?, 
+            capacity = ?, grade_level = ?, section = ?, academic_year = ?, 
+            grade_category = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    `;
+    
+    let params = [
+        name, department, teacher_id, room, schedule, capacity,
+        grade_level, section, academic_year, grade_category, status, id
+    ];
+
+    // Filter by institution if the user is an admin with an institution_id
+    if (req.user && req.user.role === 'admin' && req.user.institution_id) {
+        query += ' AND institution_id = ?';
+        params.push(req.user.institution_id);
+    }
+
+    db.run(query, params, function(err) {
+        if (err) {
+            console.error('Error updating class:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'Class not found or no permission' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Class updated successfully'
+        });
+    });
+});
+
+// Get classes by grade level
+app.get('/api/classes/grade/:level', authenticateToken, (req, res) => {
+    const { level } = req.params;
+    const { academic_year, section } = req.query;
+    
+    let query = 'SELECT * FROM classes WHERE grade_level = ? AND status = ?';
+    let params = [level, 'active'];
+
+    if (academic_year) {
+        query += ' AND academic_year = ?';
+        params.push(academic_year);
+    }
+
+    if (section) {
+        query += ' AND section = ?';
+        params.push(section);
+    }
+
+    // Filter by institution if the user is an admin with an institution_id
+    if (req.user && req.user.role === 'admin' && req.user.institution_id) {
+        query += ' AND institution_id = ?';
+        params.push(req.user.institution_id);
+    }
+
+    query += ' ORDER BY section, name';
+    
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            console.error('Error fetching classes by grade:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json({ success: true, data: rows });
+    });
+});
+
+// Delete class
+app.delete('/api/classes/:id', authenticateToken, (req, res) => {
+    const { id } = req.params;
+    
+    let query = 'UPDATE classes SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+    let params = ['deleted', id];
+
+    // Filter by institution if the user is an admin with an institution_id
+    if (req.user && req.user.role === 'admin' && req.user.institution_id) {
+        query += ' AND institution_id = ?';
+        params.push(req.user.institution_id);
+    }
+
+    db.run(query, params, function(err) {
+        if (err) {
+            console.error('Error deleting class:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'Class not found or no permission' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Class deleted successfully'
+        });
+    });
+});
+
+// ===== CALENDAR AND SCHEDULING ROUTES =====
+
+// Get all calendar events
+app.get('/api/calendar/events', authenticateToken, (req, res) => {
+    const { start_date, end_date, event_type, class_id } = req.query;
+    
+    let query = 'SELECT * FROM calendar_events WHERE 1=1';
+    let params = [];
+
+    // Date range filtering
+    if (start_date) {
+        query += ' AND start_date >= ?';
+        params.push(start_date);
+    }
+    
+    if (end_date) {
+        query += ' AND start_date <= ?';
+        params.push(end_date);
+    }
+
+    // Event type filtering
+    if (event_type) {
+        query += ' AND event_type = ?';
+        params.push(event_type);
+    }
+
+    // Class filtering
+    if (class_id) {
+        query += ' AND class_id = ?';
+        params.push(class_id);
+    }
+
+    // Filter by institution if the user is an admin with an institution_id
+    if (req.user && req.user.role === 'admin' && req.user.institution_id) {
+        query += ' AND institution_id = ?';
+        params.push(req.user.institution_id);
+    }
+
+    query += ' ORDER BY start_date, start_time';
+    
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            console.error('Error fetching calendar events:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json({ success: true, data: rows });
+    });
+});
+
+// Create new calendar event
+app.post('/api/calendar/events', authenticateToken, (req, res) => {
+    const { 
+        title, 
+        description, 
+        event_type, 
+        start_date, 
+        end_date, 
+        start_time, 
+        end_time, 
+        class_id 
+    } = req.body;
+
+    if (!title || !event_type || !start_date) {
+        return res.status(400).json({ error: 'Title, event type, and start date are required' });
+    }
+
+    // Validate event type
+    const validEventTypes = ['class', 'exam', 'holiday', 'meeting', 'announcement'];
+    if (!validEventTypes.includes(event_type)) {
+        return res.status(400).json({ error: 'Invalid event type' });
+    }
+
+    // Get institution_id from authenticated user
+    let institution_id = null;
+    if (req.user && req.user.role === 'admin' && req.user.institution_id) {
+        institution_id = req.user.institution_id;
+    }
+
+    db.run(`
+        INSERT INTO calendar_events (
+            title, description, event_type, start_date, end_date, 
+            start_time, end_time, class_id, institution_id, created_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+        title, description, event_type, start_date, end_date,
+        start_time, end_time, class_id, institution_id, req.user?.id
+    ], function(err) {
+        if (err) {
+            console.error('Error creating calendar event:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Calendar event created successfully',
+            data: { id: this.lastID, title, start_date, event_type }
+        });
+    });
+});
+
+// Update calendar event
+app.put('/api/calendar/events/:id', authenticateToken, (req, res) => {
+    const { id } = req.params;
+    const { 
+        title, 
+        description, 
+        event_type, 
+        start_date, 
+        end_date, 
+        start_time, 
+        end_time, 
+        class_id 
+    } = req.body;
+
+    let query = `
+        UPDATE calendar_events 
+        SET title = ?, description = ?, event_type = ?, start_date = ?, end_date = ?, 
+            start_time = ?, end_time = ?, class_id = ?
+        WHERE id = ?
+    `;
+    
+    let params = [
+        title, description, event_type, start_date, end_date,
+        start_time, end_time, class_id, id
+    ];
+
+    // Filter by institution if the user is an admin with an institution_id
+    if (req.user && req.user.role === 'admin' && req.user.institution_id) {
+        query += ' AND institution_id = ?';
+        params.push(req.user.institution_id);
+    }
+
+    db.run(query, params, function(err) {
+        if (err) {
+            console.error('Error updating calendar event:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'Event not found or no permission' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Calendar event updated successfully'
+        });
+    });
+});
+
+// Delete calendar event
+app.delete('/api/calendar/events/:id', authenticateToken, (req, res) => {
+    const { id } = req.params;
+    
+    let query = 'DELETE FROM calendar_events WHERE id = ?';
+    let params = [id];
+
+    // Filter by institution if the user is an admin with an institution_id
+    if (req.user && req.user.role === 'admin' && req.user.institution_id) {
+        query += ' AND institution_id = ?';
+        params.push(req.user.institution_id);
+    }
+
+    db.run(query, params, function(err) {
+        if (err) {
+            console.error('Error deleting calendar event:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'Event not found or no permission' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Calendar event deleted successfully'
+        });
+    });
+});
+
+// Get events for a specific month/year
+app.get('/api/calendar/events/:year/:month', authenticateToken, (req, res) => {
+    const { year, month } = req.params;
+    
+    const startDate = `${year}-${month.padStart(2, '0')}-01`;
+    const endDate = `${year}-${month.padStart(2, '0')}-31`;
+    
+    let query = 'SELECT * FROM calendar_events WHERE start_date >= ? AND start_date <= ?';
+    let params = [startDate, endDate];
+
+    // Filter by institution if the user is an admin with an institution_id
+    if (req.user && req.user.role === 'admin' && req.user.institution_id) {
+        query += ' AND institution_id = ?';
+        params.push(req.user.institution_id);
+    }
+
+    query += ' ORDER BY start_date, start_time';
+    
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            console.error('Error fetching monthly calendar events:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json({ success: true, data: rows });
+    });
+});
+
+// Get today's events
+app.get('/api/calendar/today', authenticateToken, (req, res) => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    let query = 'SELECT * FROM calendar_events WHERE start_date = ?';
+    let params = [today];
+
+    // Filter by institution if the user is an admin with an institution_id
+    if (req.user && req.user.role === 'admin' && req.user.institution_id) {
+        query += ' AND institution_id = ?';
+        params.push(req.user.institution_id);
+    }
+
+    query += ' ORDER BY start_time';
+    
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            console.error('Error fetching today\'s events:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json({ success: true, data: rows });
+    });
+});
+
+// ===== GOOGLE DRIVE API ROUTES =====
+
+// Initialize Google Drive for institution
+app.post('/api/drive/initialize/:institutionId', authenticateToken, async (req, res) => {
+    try {
+        const { institutionId } = req.params;
+        
+        // Get institution details
+        const institution = await new Promise((resolve, reject) => {
+            db.get('SELECT * FROM institutions WHERE id = ?', [institutionId], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+        
+        if (!institution) {
+            return res.status(404).json({ error: 'Institution not found' });
+        }
+        
+        // Create folder structure
+        const folderStructure = await googleDrive.createInstitutionFolders(
+            institution.name, 
+            institution.institution_code
+        );
+        
+        res.json({
+            success: true,
+            message: 'Google Drive folders created successfully',
+            data: folderStructure
+        });
+        
+    } catch (error) {
+        console.error('Error initializing Google Drive:', error);
+        res.status(500).json({ error: 'Failed to initialize Google Drive folders' });
+    }
+});
+
+// Create user folder (for teachers/students)
+app.post('/api/drive/user-folder', authenticateToken, async (req, res) => {
+    try {
+        const { userName, userType, institutionId } = req.body;
+        
+        if (!userName || !userType || !institutionId) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+        
+        // Get institution details
+        const institution = await new Promise((resolve, reject) => {
+            db.get('SELECT * FROM institutions WHERE id = ?', [institutionId], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+        
+        if (!institution) {
+            return res.status(404).json({ error: 'Institution not found' });
+        }
+        
+        // Get or create institution folders
+        let folderStructure = await googleDrive.getInstitutionStructure(
+            institution.name, 
+            institution.institution_code
+        );
+        
+        if (!folderStructure) {
+            folderStructure = await googleDrive.createInstitutionFolders(
+                institution.name, 
+                institution.institution_code
+            );
+        }
+        
+        // Create user folder
+        const userFolder = await googleDrive.createUserFolder(userName, userType, folderStructure);
+        
+        res.json({
+            success: true,
+            message: 'User folder created successfully',
+            data: {
+                userFolder,
+                institutionStructure: folderStructure
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error creating user folder:', error);
+        res.status(500).json({ error: 'Failed to create user folder' });
+    }
+});
+
+// Upload photo to user folder
+app.post('/api/drive/upload-photo', authenticateToken, multer().single('photo'), async (req, res) => {
+    try {
+        const { userName, userType, institutionId } = req.body;
+        const photo = req.file;
+        
+        if (!photo || !userName || !userType || !institutionId) {
+            return res.status(400).json({ error: 'Missing required fields or photo' });
+        }
+        
+        // Get institution details
+        const institution = await new Promise((resolve, reject) => {
+            db.get('SELECT * FROM institutions WHERE id = ?', [institutionId], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+        
+        if (!institution) {
+            return res.status(404).json({ error: 'Institution not found' });
+        }
+        
+        // Get institution folder structure
+        let folderStructure = await googleDrive.getInstitutionStructure(
+            institution.name, 
+            institution.institution_code
+        );
+        
+        if (!folderStructure) {
+            folderStructure = await googleDrive.createInstitutionFolders(
+                institution.name, 
+                institution.institution_code
+            );
+        }
+        
+        // Create user folder if it doesn't exist
+        const userFolder = await googleDrive.createUserFolder(userName, userType, folderStructure);
+        
+        // Save photo temporarily
+        const tempPath = path.join(__dirname, '../temp', photo.originalname);
+        
+        // Ensure temp directory exists
+        const tempDir = path.dirname(tempPath);
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(tempPath, photo.buffer);
+        
+        try {
+            // Upload to Google Drive
+            const uploadResult = await googleDrive.uploadFile(
+                tempPath,
+                `${userName}_${Date.now()}.${photo.originalname.split('.').pop()}`,
+                userFolder.folderId,
+                photo.mimetype
+            );
+            
+            // Clean up temp file
+            fs.unlinkSync(tempPath);
+            
+            res.json({
+                success: true,
+                message: 'Photo uploaded successfully',
+                data: uploadResult
+            });
+            
+        } catch (uploadError) {
+            // Clean up temp file on error
+            if (fs.existsSync(tempPath)) {
+                fs.unlinkSync(tempPath);
+            }
+            throw uploadError;
+        }
+        
+    } catch (error) {
+        console.error('Error uploading photo:', error);
+        res.status(500).json({ error: 'Failed to upload photo' });
+    }
+});
+
+// Get user's photos from Drive
+app.get('/api/drive/user-photos/:userName/:userType/:institutionId', authenticateToken, async (req, res) => {
+    try {
+        const { userName, userType, institutionId } = req.params;
+        
+        // Get institution details
+        const institution = await new Promise((resolve, reject) => {
+            db.get('SELECT * FROM institutions WHERE id = ?', [institutionId], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+        
+        if (!institution) {
+            return res.status(404).json({ error: 'Institution not found' });
+        }
+        
+        // Get institution folder structure
+        const folderStructure = await googleDrive.getInstitutionStructure(
+            institution.name, 
+            institution.institution_code
+        );
+        
+        if (!folderStructure) {
+            return res.json({ success: true, data: [] });
+        }
+        
+        // Get user folder
+        const parentFolderId = userType === 'teacher' ? 
+            folderStructure.teachersFolderId : 
+            folderStructure.studentsFolderId;
+            
+        if (!parentFolderId) {
+            return res.json({ success: true, data: [] });
+        }
+        
+        // Find user folder
+        const userFolderId = await googleDrive.findOrCreateFolder(userName, parentFolderId);
+        
+        // List files in user folder
+        const files = await googleDrive.listFiles(userFolderId);
+        
+        res.json({
+            success: true,
+            data: files
+        });
+        
+    } catch (error) {
+        console.error('Error getting user photos:', error);
+        res.status(500).json({ error: 'Failed to get user photos' });
+    }
+});
+
+// Delete photo from Drive
+app.delete('/api/drive/photo/:fileId', authenticateToken, async (req, res) => {
+    try {
+        const { fileId } = req.params;
+        
+        await googleDrive.deleteFile(fileId);
+        
+        res.json({
+            success: true,
+            message: 'Photo deleted successfully'
+        });
+        
+    } catch (error) {
+        console.error('Error deleting photo:', error);
+        res.status(500).json({ error: 'Failed to delete photo' });
+    }
+});
+
+// Get Drive folder structure for institution
+app.get('/api/drive/structure/:institutionId', authenticateToken, async (req, res) => {
+    try {
+        const { institutionId } = req.params;
+        
+        // Get institution details
+        const institution = await new Promise((resolve, reject) => {
+            db.get('SELECT * FROM institutions WHERE id = ?', [institutionId], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+        
+        if (!institution) {
+            return res.status(404).json({ error: 'Institution not found' });
+        }
+        
+        // Get folder structure
+        const folderStructure = await googleDrive.getInstitutionStructure(
+            institution.name, 
+            institution.institution_code
+        );
+        
+        res.json({
+            success: true,
+            data: folderStructure
+        });
+        
+    } catch (error) {
+        console.error('Error getting Drive structure:', error);
+        res.status(500).json({ error: 'Failed to get Drive structure' });
+    }
+});
+
 // ===== UTILITY FUNCTIONS =====
 function insertAttendanceRecords(records) {
     return new Promise((resolve, reject) => {
@@ -1656,11 +2770,13 @@ function startServer() {
     
     app.listen(PORT, () => {
         console.log(`🏫 Cheick Mohamed School Server running on port ${PORT}`);
-        console.log(`📚 Access the website at: http://localhost:${PORT}`);
-        console.log(`🔧 Admin Portal: http://localhost:${PORT}/portals/admin`);
-        console.log(`👨‍🏫 Teacher Portal: http://localhost:${PORT}/portals/teacher`);
-        console.log(`🎓 Student Portal: http://localhost:${PORT}/portals/student`);
-        console.log(`👪 Parent Portal: http://localhost:${PORT}/portals/parent`);
+        const baseUrl = isReplit ? 'https://school-app.replit.com' : `http://localhost:${PORT}`;
+        console.log(`📚 Access the website at: ${baseUrl}`);
+        console.log(`🔧 Admin Portal: ${baseUrl}/portals/admin`);
+        console.log(`👨‍🏫 Teacher Portal: ${baseUrl}/portals/teacher`);
+        console.log(`🎓 Student Portal: ${baseUrl}/portals/student`);
+        console.log(`👪 Parent Portal: ${baseUrl}/portals/parent`);
+        console.log(`🏛️ Super Admin Portal: ${baseUrl}/portals/superadmin`);
         console.log('');
         console.log('📊 API Endpoints:');
         console.log('  POST /api/auth/login - User authentication');
