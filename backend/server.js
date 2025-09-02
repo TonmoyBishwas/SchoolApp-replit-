@@ -27,6 +27,8 @@ const DB_PATH = isReplit ? './database/school.db' : './database/school.db';
 // Configure CORS for development and production
 const corsOptions = {
     origin: function (origin, callback) {
+        console.log('CORS check - Origin:', origin, 'NODE_ENV:', process.env.NODE_ENV);
+        
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
         
@@ -38,9 +40,13 @@ const corsOptions = {
             'https://schul.e1ectr0n.replit.dev'
         ];
         
-        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+        // Allow development environment or localhost/replit origins
+        if (allowedOrigins.indexOf(origin) !== -1 || 
+            process.env.NODE_ENV === 'development' ||
+            !process.env.NODE_ENV) {
             callback(null, true);
         } else {
+            console.log('CORS rejected - Origin not allowed:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
