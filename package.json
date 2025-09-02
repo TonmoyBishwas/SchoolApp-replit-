@@ -49,6 +49,7 @@
   "devDependencies": {},
   "replit": {
     "run": "npm start",
+    "deploymentTarget": "cloudrun",
     "env": {
       "NODE_ENV": "production"
     }

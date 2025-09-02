@@ -4,7 +4,9 @@ modules = ["nodejs-20"]
 repl = "."
 
 [deployment]
-run = ["node", "start.js"]
+run = ["sh", "-c", "npm start"]
+deploymentTarget = "cloudrun"
+publicDir = "/"
 
 [[ports]]
 localPort = 3000
