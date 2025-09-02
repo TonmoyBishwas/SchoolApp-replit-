@@ -517,10 +517,6 @@ async function loadInstitutions() {
         retryBtn.className = 'btn-secondary';
         retryBtn.onclick = loadInstitutions;
         institutionCards.appendChild(retryBtn);
-            }
-        } catch (e) {
-            console.error('Error loading fallback institutions:', e);
-        }
     }
 }
 
@@ -847,6 +843,17 @@ function showNotification(message, type = 'info') {
 // ===== DASHBOARD FUNCTIONS =====
 async function updateDashboardStats() {
     try {
+        // Show loading state
+        const totalInstitutionsEl = document.getElementById('totalInstitutions');
+        const totalTeachersEl = document.getElementById('totalTeachers');
+        const totalStudentsEl = document.getElementById('totalStudents');
+        const systemAdminsEl = document.getElementById('systemAdmins');
+        
+        if (totalInstitutionsEl) totalInstitutionsEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        if (totalTeachersEl) totalTeachersEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        if (totalStudentsEl) totalStudentsEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        if (systemAdminsEl) systemAdminsEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
         const baseURL = getAPIBaseURL();
         const response = await fetch(`${baseURL}/superadmin/stats`);
         
@@ -857,11 +864,12 @@ async function updateDashboardStats() {
         const result = await response.json();
         const stats = result.data;
         
-        // Update the dashboard statistics with real data
-        document.querySelector('.stat-card:nth-child(1) .stat-number').textContent = stats.totalInstitutions || 0;
-        document.querySelector('.stat-card:nth-child(2) .stat-number').textContent = stats.totalTeachers || 0;
-        document.querySelector('.stat-card:nth-child(3) .stat-number').textContent = stats.totalStudents || 0;
-        document.querySelector('.stat-card:nth-child(4) .stat-number').textContent = stats.systemAdmins || 0;
+        // Update the dashboard statistics with real data using existing elements
+        
+        if (totalInstitutionsEl) totalInstitutionsEl.textContent = stats.totalInstitutions || 0;
+        if (totalTeachersEl) totalTeachersEl.textContent = stats.totalTeachers || 0;
+        if (totalStudentsEl) totalStudentsEl.textContent = stats.totalStudents || 0;
+        if (systemAdminsEl) systemAdminsEl.textContent = stats.systemAdmins || 0;
         
         // Add animation effect to the numbers
         document.querySelectorAll('.stat-number').forEach(el => {
@@ -876,11 +884,12 @@ async function updateDashboardStats() {
     } catch (error) {
         console.error('Error updating dashboard stats:', error);
         
-        // Fallback to localStorage data
-        const institutions = JSON.parse(localStorage.getItem('institutions') || '[]');
-        document.querySelector('.stat-card:nth-child(1) .stat-number').textContent = institutions.length;
-        document.querySelector('.stat-card:nth-child(2) .stat-number').textContent = '0';
-        document.querySelector('.stat-card:nth-child(3) .stat-number').textContent = '0';
-        document.querySelector('.stat-card:nth-child(4) .stat-number').textContent = '1';
+        // Show zeros if API fails - no hardcoded fallback data
+        // Reuse the existing element references
+        
+        if (totalInstitutionsEl) totalInstitutionsEl.textContent = '0';
+        if (totalTeachersEl) totalTeachersEl.textContent = '0';
+        if (totalStudentsEl) totalStudentsEl.textContent = '0';
+        if (systemAdminsEl) systemAdminsEl.textContent = '0';
     }
 }

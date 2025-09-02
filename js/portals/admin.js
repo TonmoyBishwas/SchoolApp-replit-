@@ -229,13 +229,13 @@ async function updateDashboardStats() {
         
         const result = await response.json();
         const stats = result.data || {
-            totalStudents: 523,
-            totalTeachers: 35,
-            totalClasses: 24,
-            attendanceRate: 94,
-            newStudentsThisMonth: 12,
-            newTeachersThisMonth: 2,
-            attendanceRateChange: 2
+            totalStudents: 0,
+            totalTeachers: 0,
+            totalClasses: 0,
+            attendanceRate: 0,
+            newStudentsThisMonth: 0,
+            newTeachersThisMonth: 0,
+            attendanceRateChange: 0
         };
         
         // Update stat cards with animation
@@ -250,12 +250,12 @@ async function updateDashboardStats() {
         updateTrendIndicator('attendance-trend', stats.attendanceRateChange);
     } catch (error) {
         console.error('Error updating dashboard stats:', error);
-        // Use fallback data
+        // Use zero fallback data - no hardcoded dummy values
         const stats = {
-            totalStudents: 523,
-            totalTeachers: 35,
-            totalClasses: 24,
-            attendanceRate: 94
+            totalStudents: 0,
+            totalTeachers: 0,
+            totalClasses: 0,
+            attendanceRate: 0
         };
         
         animateStatCard('totalStudents', stats.totalStudents);
@@ -317,42 +317,32 @@ function animateStatCard(elementId, finalValue) {
 }
 
 function loadRecentActivity() {
-    const activities = [
-        {
-            icon: 'fa-user-plus',
-            description: '<strong>New student enrolled:</strong> Sarah Johnson',
-            time: '2 hours ago'
-        },
-        {
-            icon: 'fa-calendar-check',
-            description: '<strong>Attendance submitted:</strong> Class 10A',
-            time: '3 hours ago'
-        },
-        {
-            icon: 'fa-money-bill',
-            description: '<strong>Fee payment received:</strong> $500',
-            time: '5 hours ago'
-        },
-        {
-            icon: 'fa-graduation-cap',
-            description: '<strong>Exam scheduled:</strong> Mathematics Test',
-            time: '6 hours ago'
-        }
-    ];
+    // TODO: Replace with real activity data from API
+    // For now, show empty state instead of dummy data
+    const activities = [];
     
     const activityList = document.getElementById('activityList');
     if (activityList) {
-        activityList.innerHTML = activities.map(activity => `
-            <div class="activity-item">
-                <div class="activity-icon">
-                    <i class="fas ${activity.icon}"></i>
+        if (activities.length === 0) {
+            activityList.innerHTML = `
+                <div class="empty-activity-state">
+                    <i class="fas fa-clock" style="font-size: 48px; color: #ccc; margin-bottom: 15px;"></i>
+                    <p style="color: #999; text-align: center;">No recent activity</p>
                 </div>
-                <div class="activity-content">
-                    <p>${activity.description}</p>
-                    <span class="activity-time">${activity.time}</span>
+            `;
+        } else {
+            activityList.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas ${activity.icon}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <p>${activity.description}</p>
+                        <span class="activity-time">${activity.time}</span>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `).join('');
+        }
     }
 }
 

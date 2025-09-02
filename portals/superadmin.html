@@ -49,11 +49,11 @@
         <nav class="sidebar-nav">
             <div class="nav-section">
                 <h3>Main</h3>
-                <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard')">
+                <a href="#dashboard" class="nav-item active" >
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="#institutions" class="nav-item" onclick="showSection('institutions')">
+                <a href="#institutions" class="nav-item" >
                     <i class="fas fa-school"></i>
                     <span>Institutions</span>
                 </a>
@@ -83,7 +83,7 @@
                         </div>
                         <div class="stat-info">
                             <h3>Total Institutions</h3>
-                            <p class="stat-number">5</p>
+                            <p class="stat-number" id="totalInstitutions">0</p>
                         </div>
                     </div>
 
@@ -93,7 +93,7 @@
                         </div>
                         <div class="stat-info">
                             <h3>Total Teachers</h3>
-                            <p class="stat-number">42</p>
+                            <p class="stat-number" id="totalTeachers">0</p>
                         </div>
                     </div>
 
@@ -103,7 +103,7 @@
                         </div>
                         <div class="stat-info">
                             <h3>Total Students</h3>
-                            <p class="stat-number">750</p>
+                            <p class="stat-number" id="totalStudents">0</p>
                         </div>
                     </div>
 
@@ -113,7 +113,7 @@
                         </div>
                         <div class="stat-info">
                             <h3>System Admins</h3>
-                            <p class="stat-number">7</p>
+                            <p class="stat-number" id="systemAdmins">0</p>
                         </div>
                     </div>
                 </div>
